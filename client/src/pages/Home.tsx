@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import logo from '@assets/logo_1764702653665.png';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -32,7 +31,7 @@ export default function Home() {
           transition={{ duration: 0.6 }}
           className="flex flex-col items-center mb-16"
         >
-          <img src={logo} alt="Boundier" className="h-24 mb-8" />
+          <img src="/logo.png" alt="Boundier" className="h-24 mb-8" />
           <p className="text-xl md:text-2xl text-white/70 text-center max-w-2xl font-light">
             Analyze what changes you while you consume content
           </p>

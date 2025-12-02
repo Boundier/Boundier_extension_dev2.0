@@ -257,25 +257,56 @@
   }
 
   function generateInterpretation(metrics) {
-    const { influence, distortion, echoDrift, dominantHook } = metrics;
+    const { influence, distortion, echoDrift, dominantHook, emotionalPressure, fixation } = metrics;
     const hookClean = (dominantHook || 'generic').replace(/_/g, ' ');
 
+    const interpretations = [];
+
     if (influence > 0.7 && distortion > 0.7) {
-      return `Strong ${hookClean} hook and certainty tone — this content is overriding your critical filter.`;
+      return `This content uses strong ${hookClean} framing combined with absolute language. It's designed to bypass careful thinking and demand immediate agreement. Consider stepping back before forming opinions.`;
     }
-    if (echoDrift > 0.5) {
-      return `Repeated exposure to ${hookClean} triggers — your baseline response is drifting toward this pattern.`;
+    
+    if (echoDrift > 0.6) {
+      return `You've been consuming similar ${hookClean}-themed content repeatedly. This pattern reinforcement can narrow your perspective over time. Consider seeking out contrasting viewpoints.`;
     }
-    if (influence > 0.6) {
-      return `High emotional engagement with ${hookClean} themes — you are fixating on this pattern.`;
+    
+    if (echoDrift > 0.4 && influence > 0.5) {
+      return `This ${hookClean} content matches your recent browsing pattern while also being emotionally engaging. Your reactions to this topic may be becoming more automatic.`;
     }
-    if (distortion > 0.6) {
-      return `Absolute framing detected — this content demands total agreement without nuance.`;
+
+    if (distortion > 0.7) {
+      return `This content uses certainty language and absolute framing, presenting ideas as unquestionable facts. Look for hedging words like "might" or "suggests" in more balanced content.`;
     }
-    if (influence < 0.2) {
-      return `Low resonance — this content did not significantly alter your state.`;
+    
+    if (influence > 0.6 && emotionalPressure > 0.5) {
+      return `High emotional intensity detected with ${hookClean} themes. The content is designed to create strong reactions. Your attention is being captured by emotionally-charged language.`;
     }
-    return `Moderate framing pressure with ${hookClean} elements — this content has a balanced influence profile.`;
+    
+    if (distortion > 0.5 && emotionalPressure > 0.4) {
+      return `This content combines emotional language with certainty framing. It's using feelings to make claims feel true rather than providing balanced evidence.`;
+    }
+    
+    if (fixation > 0.5 && influence > 0.4) {
+      return `Extended engagement detected. You've been focused on this content for a while. This level of attention can amplify the content's influence on your thinking.`;
+    }
+
+    if (influence > 0.5) {
+      return `Moderate ${hookClean} engagement detected. This content is capturing your attention through emotional or identity-based appeals.`;
+    }
+    
+    if (distortion > 0.4) {
+      return `Some certainty language detected. The content leans toward presenting opinions as facts, though less aggressively than highly distorted content.`;
+    }
+
+    if (influence < 0.2 && distortion < 0.2) {
+      return `Low influence profile. This content appears relatively neutral and isn't using strong emotional or persuasive techniques.`;
+    }
+    
+    if (influence < 0.3) {
+      return `Minimal emotional engagement with this content. It's not significantly altering your state or using heavy persuasion tactics.`;
+    }
+
+    return `Balanced ${hookClean} content with moderate framing. Some persuasive elements present but within normal range for online content.`;
   }
 
   // --- CSS INJECTION ---
@@ -287,55 +318,59 @@
     style.textContent = `
       #boundier-scan-btn {
         position: fixed !important;
-        right: 16px !important;
+        right: 20px !important;
         top: 50% !important;
         transform: translateY(-50%) !important;
         z-index: 2147483646 !important;
-        background: rgba(0, 56, 255, 0.6) !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        border-radius: 8px !important;
-        padding: 14px 10px !important;
+        background: rgba(0, 20, 80, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 12px !important;
+        padding: 16px 12px !important;
         color: white !important;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-        font-weight: bold !important;
-        font-size: 11px !important;
+        font-family: 'Cooper Hewitt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        font-weight: 700 !important;
+        font-size: 12px !important;
         text-transform: uppercase !important;
-        letter-spacing: 1.5px !important;
+        letter-spacing: 2px !important;
         writing-mode: vertical-rl !important;
+        text-orientation: mixed !important;
         cursor: pointer !important;
-        box-shadow: 0 0 20px rgba(0, 56, 255, 0.6) !important;
-        transition: all 0.3s ease !important;
-        backdrop-filter: blur(8px) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
+        box-shadow: 0 4px 24px rgba(0, 56, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
         opacity: 0 !important;
         pointer-events: none !important;
+        white-space: nowrap !important;
       }
       
       #boundier-scan-btn.visible {
         opacity: 1 !important;
         pointer-events: auto !important;
-        animation: boundier-glow 2s ease-in-out infinite !important;
+        animation: boundier-pulse 3s ease-in-out infinite !important;
       }
       
-      @keyframes boundier-glow {
+      @keyframes boundier-pulse {
         0%, 100% { 
-          box-shadow: 0 0 20px rgba(0, 56, 255, 0.6);
+          box-shadow: 0 4px 24px rgba(0, 56, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
           transform: translateY(-50%) scale(1);
         }
         50% { 
-          box-shadow: 0 0 35px rgba(0, 56, 255, 0.9);
+          box-shadow: 0 6px 32px rgba(0, 56, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
           transform: translateY(-50%) scale(1.02);
         }
       }
       
       #boundier-scan-btn:hover {
-        background: rgba(0, 56, 255, 0.8) !important;
-        box-shadow: 0 0 40px rgba(0, 56, 255, 1) !important;
+        background: rgba(0, 40, 120, 0.85) !important;
+        box-shadow: 0 8px 40px rgba(0, 56, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
         transform: translateY(-50%) scale(1.05) !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
       }
       
       #boundier-scan-btn:active {
         transform: translateY(-50%) scale(0.98) !important;
+        box-shadow: 0 2px 16px rgba(0, 56, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
       }
       
       #boundier-overlay {
@@ -343,17 +378,17 @@
         top: 0 !important;
         right: 0 !important;
         height: 100vh !important;
-        width: 340px !important;
+        width: 360px !important;
         z-index: 2147483647 !important;
-        background: rgba(0, 5, 67, 0.97) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border-left: 1px solid rgba(255, 255, 255, 0.15) !important;
-        box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5) !important;
+        background: linear-gradient(180deg, rgba(0, 15, 60, 0.85) 0%, rgba(0, 5, 40, 0.92) 100%) !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
+        box-shadow: -12px 0 60px rgba(0, 0, 0, 0.4), inset 1px 0 0 rgba(255, 255, 255, 0.05) !important;
         color: white !important;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        font-family: 'Cooper Hewitt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
         transform: translateX(100%) !important;
-        transition: transform 300ms cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        transition: transform 350ms cubic-bezier(0.25, 0.8, 0.25, 1) !important;
         display: flex !important;
         flex-direction: column !important;
         padding: 28px !important;
@@ -490,28 +525,35 @@
       
       .boundier-interpretation {
         margin-top: 28px !important;
-        padding: 18px !important;
-        background: rgba(255, 255, 255, 0.05) !important;
+        padding: 20px !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 12px !important;
-        font-size: 14px !important;
-        line-height: 1.6 !important;
+        border-radius: 14px !important;
+        font-size: 15px !important;
+        line-height: 1.65 !important;
         font-weight: 400 !important;
-        color: rgba(255, 255, 255, 0.9) !important;
+        color: rgba(255, 255, 255, 0.92) !important;
       }
       
       .boundier-hook-tag {
         display: inline-block !important;
-        margin-top: 14px !important;
-        padding: 6px 12px !important;
-        background: rgba(0, 56, 255, 0.2) !important;
-        border: 1px solid rgba(0, 56, 255, 0.4) !important;
-        color: #4D8DFF !important;
-        border-radius: 6px !important;
-        font-size: 10px !important;
+        margin-top: 16px !important;
+        padding: 8px 14px !important;
+        background: rgba(0, 56, 255, 0.15) !important;
+        border: 1px solid rgba(0, 56, 255, 0.35) !important;
+        color: #6BA3FF !important;
+        border-radius: 8px !important;
+        font-size: 11px !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.08em !important;
+        letter-spacing: 0.1em !important;
         font-weight: 600 !important;
+      }
+      
+      .boundier-logo-img {
+        height: 32px !important;
+        width: auto !important;
       }
     `;
     
@@ -542,7 +584,7 @@
     overlay.innerHTML = `
       <div class="boundier-header">
         <div>
-          <div class="boundier-title"><span class="boundier-blue">[</span>boundier<span class="boundier-blue">_</span></div>
+          <img src="${chrome.runtime.getURL('assets/logo.png')}" alt="Boundier" class="boundier-logo-img" />
           <div class="boundier-subtitle">Current Influence Snapshot</div>
         </div>
         <button class="boundier-close">×</button>
@@ -649,65 +691,86 @@
     }
   }
 
+  function showMinimalTextMessage() {
+    const overlay = document.getElementById('boundier-overlay');
+    if (overlay) {
+      overlay.classList.add('open');
+      const interpretation = document.getElementById('b-interpretation');
+      if (interpretation) {
+        interpretation.textContent = 'Not enough readable text on this page for meaningful analysis. Try a page with more written content.';
+      }
+    }
+  }
+
   // --- CORE SCAN LOGIC ---
   function performActiveScan() {
     console.log('[Boundier] Performing active scan...');
     
-    const text = extractVisibleText();
-    console.log('[Boundier] Extracted text length:', text.length, 'chars');
-    
-    const dwell = (Date.now() - state.startTime) / 1000;
-    const metrics = analyze(text, dwell, state.scrollBacks);
-    console.log('[Boundier] Raw metrics:', metrics);
-
-    // Get history and calculate REAL Echo Drift
-    chrome.storage.local.get(['boundier_scans'], (result) => {
-      const history = result.boundier_scans || [];
-      console.log('[Boundier] History length:', history.length);
+    try {
+      const text = extractVisibleText();
+      console.log('[Boundier] Extracted text length:', text.length, 'chars');
       
-      // REAL Echo Drift: % of last N scans with same dominantHook
-      if (history.length > 0) {
-        const lastN = history.slice(0, 7);
-        const sameHookCount = lastN.filter(s => s.dominantHook === metrics.dominantHook).length;
-        metrics.echoDrift = sameHookCount / lastN.length;
-        console.log('[Boundier] Echo Drift calculated:', metrics.echoDrift, 
-                    '(' + sameHookCount + '/' + lastN.length + ' matching "' + metrics.dominantHook + '")');
-      } else {
-        metrics.echoDrift = 0;
-      }
-
-      // Update UI
-      updateOverlay(metrics);
-      
-      const overlay = document.getElementById('boundier-overlay');
-      if (overlay) {
-        overlay.classList.add('open');
-        console.log('[Boundier] Overlay opened');
+      if (!text || text.trim().length < CONFIG.MIN_TEXT_LENGTH) {
+        console.log('[Boundier] Insufficient text for analysis');
+        showMinimalTextMessage();
+        return;
       }
       
-      hideScanButton();
+      const dwell = (Date.now() - state.startTime) / 1000;
+      const metrics = analyze(text, dwell, state.scrollBacks);
+      console.log('[Boundier] Raw metrics:', metrics);
 
-      // Save to history
-      const scanRecord = {
-        id: Date.now().toString(),
-        timestamp: Date.now(),
-        influence: metrics.influence,
-        distortion: metrics.distortion,
-        echoDrift: metrics.echoDrift,
-        emotionalPressure: metrics.emotionalPressure,
-        fixation: metrics.fixation,
-        dominantHook: metrics.dominantHook,
-        interpretation: generateInterpretation(metrics),
-        url: window.location.hostname
-      };
-      
-      const newHistory = [scanRecord, ...history].slice(0, 20); // Keep last 20
-      chrome.storage.local.set({ boundier_scans: newHistory }, () => {
-        console.log('[Boundier] Scan saved to history');
+      // Get history and calculate REAL Echo Drift
+      chrome.storage.local.get(['boundier_scans'], (result) => {
+        const history = result.boundier_scans || [];
+        console.log('[Boundier] History length:', history.length);
+        
+        // REAL Echo Drift: % of last N scans with same dominantHook
+        if (history.length > 0) {
+          const lastN = history.slice(0, 7);
+          const sameHookCount = lastN.filter(s => s.dominantHook === metrics.dominantHook).length;
+          metrics.echoDrift = sameHookCount / lastN.length;
+          console.log('[Boundier] Echo Drift calculated:', metrics.echoDrift, 
+                      '(' + sameHookCount + '/' + lastN.length + ' matching "' + metrics.dominantHook + '")');
+        } else {
+          metrics.echoDrift = 0;
+        }
+
+        // Update UI
+        updateOverlay(metrics);
+        
+        const overlay = document.getElementById('boundier-overlay');
+        if (overlay) {
+          overlay.classList.add('open');
+          console.log('[Boundier] Overlay opened');
+        }
+        
+        hideScanButton();
+
+        // Save to history
+        const scanRecord = {
+          id: Date.now().toString(),
+          timestamp: Date.now(),
+          influence: metrics.influence,
+          distortion: metrics.distortion,
+          echoDrift: metrics.echoDrift,
+          emotionalPressure: metrics.emotionalPressure,
+          fixation: metrics.fixation,
+          dominantHook: metrics.dominantHook,
+          interpretation: generateInterpretation(metrics),
+          url: window.location.hostname
+        };
+        
+        const newHistory = [scanRecord, ...history].slice(0, 20); // Keep last 20
+        chrome.storage.local.set({ boundier_scans: newHistory }, () => {
+          console.log('[Boundier] Scan saved to history');
+        });
+        
+        state.hasScannedCurrentPage = true;
       });
-      
-      state.hasScannedCurrentPage = true;
-    });
+    } catch (error) {
+      console.error('[Boundier] Scan error:', error);
+    }
   }
 
   // --- PASSIVE SENSING ---

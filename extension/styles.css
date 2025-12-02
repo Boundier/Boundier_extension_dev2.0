@@ -5,6 +5,7 @@
   src: url('fonts/CooperHewitt-Bold.woff2') format('woff2');
   font-weight: bold;
   font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
@@ -12,58 +13,76 @@
   src: url('fonts/CooperHewitt-Heavy.woff2') format('woff2');
   font-weight: 900;
   font-style: normal;
+  font-display: swap;
 }
 
 :root {
   --boundier-dark: #000543;
   --boundier-blue: #0038FF;
+  --boundier-blue-light: #4D8DFF;
   --boundier-white: #FFFFFF;
-  --boundier-glass-light: rgba(255, 255, 255, 0.07);
-  --boundier-glass-dark: rgba(0, 5, 67, 0.32);
-  --boundier-shadow: 0px 4px 20px rgba(0, 0, 0, 0.25);
+  --boundier-glass-light: rgba(255, 255, 255, 0.08);
+  --boundier-glass-dark: rgba(0, 15, 60, 0.75);
+  --boundier-glass-overlay: linear-gradient(180deg, rgba(0, 15, 60, 0.85) 0%, rgba(0, 5, 40, 0.92) 100%);
+  --boundier-shadow: 0px 4px 24px rgba(0, 0, 0, 0.3);
+  --boundier-glow: 0 0 20px rgba(0, 56, 255, 0.4);
 }
 
 /* Scan Button */
 #boundier-scan-btn {
   position: fixed;
-  right: 16px;
+  right: 20px;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2147483646; /* High z-index */
-  background: rgba(0, 56, 255, 0.45);
+  z-index: 2147483646;
+  background: var(--boundier-glass-dark);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  padding: 12px 6px;
+  border-radius: 12px;
+  padding: 16px 12px;
   color: white;
-  font-family: 'Cooper Hewitt', sans-serif;
-  font-weight: bold;
+  font-family: 'Cooper Hewitt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 700;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 2px;
   writing-mode: vertical-rl;
+  text-orientation: mixed;
   cursor: pointer;
-  box-shadow: 0 0 12px #0038FF88;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
+  box-shadow: var(--boundier-glow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   opacity: 0;
   pointer-events: none;
-  scale: 0.8;
 }
 
 #boundier-scan-btn.visible {
   opacity: 1;
   pointer-events: auto;
-  scale: 1;
+  animation: boundier-pulse 3s ease-in-out infinite;
+}
+
+@keyframes boundier-pulse {
+  0%, 100% { 
+    box-shadow: var(--boundier-glow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transform: translateY(-50%) scale(1);
+  }
+  50% { 
+    box-shadow: 0 6px 32px rgba(0, 56, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-50%) scale(1.02);
+  }
 }
 
 #boundier-scan-btn:hover {
-  transform: translateY(-50%) scale(1.03);
-  box-shadow: 0 0 20px #0038FF;
-  background: rgba(0, 56, 255, 0.6);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 8px 40px rgba(0, 56, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: rgba(0, 40, 120, 0.85);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 #boundier-scan-btn:active {
-  transform: translateY(-50%) scale(0.97);
+  transform: translateY(-50%) scale(0.98);
+  box-shadow: 0 2px 16px rgba(0, 56, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* Overlay Panel */
@@ -72,21 +91,22 @@
   top: 0;
   right: 0;
   height: 100vh;
-  width: 320px;
+  width: 360px;
   z-index: 2147483647;
-  background: var(--boundier-glass-dark);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-left: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: var(--boundier-shadow);
+  background: var(--boundier-glass-overlay);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: -12px 0 60px rgba(0, 0, 0, 0.4), inset 1px 0 0 rgba(255, 255, 255, 0.05);
   color: white;
-  font-family: 'Cooper Hewitt', sans-serif;
+  font-family: 'Cooper Hewitt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   transform: translateX(100%);
-  transition: transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: transform 350ms cubic-bezier(0.25, 0.8, 0.25, 1);
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 28px;
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
 #boundier-overlay.open {
@@ -201,29 +221,36 @@
 }
 
 .boundier-interpretation {
-  margin-top: 24px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.5;
-  font-weight: 300;
-  opacity: 0.9;
+  margin-top: 28px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  font-size: 15px;
+  line-height: 1.65;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .boundier-hook-tag {
   display: inline-block;
-  margin-top: 12px;
-  padding: 4px 8px;
-  background: rgba(0, 56, 255, 0.2);
-  border: 1px solid rgba(0, 56, 255, 0.3);
-  color: var(--boundier-blue);
-  border-radius: 4px;
-  font-size: 10px;
+  margin-top: 16px;
+  padding: 8px 14px;
+  background: rgba(0, 56, 255, 0.15);
+  border: 1px solid rgba(0, 56, 255, 0.35);
+  color: var(--boundier-blue-light);
+  border-radius: 8px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: bold;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.boundier-logo-img {
+  height: 32px;
+  width: auto;
 }
 
 /* Popup Specifics */

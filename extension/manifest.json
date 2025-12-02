@@ -37,7 +37,9 @@
         "fonts/CooperHewitt-Bold.woff2", 
         "fonts/CooperHewitt-Heavy.woff2",
         "assets/icon16.png",
-        "assets/icon48.png"
+        "assets/icon48.png",
+        "assets/icon128.png",
+        "assets/logo.png"
       ],
       "matches": ["<all_urls>"]
     }
