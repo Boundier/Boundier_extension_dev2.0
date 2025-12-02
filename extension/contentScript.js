@@ -8,7 +8,7 @@
     FIXATION_CAP: 60, // 60 seconds max for normalization
     PRESSURE_THRESHOLD: 0.6,
     FIXATION_THRESHOLD: 0.6,
-    SILENT_SCAN_RISE: 0.3 // +30% dwell time
+    MIN_TEXT_LENGTH: 30 // Minimum text length to analyze
   };
 
   // --- STATE ---
@@ -28,49 +28,93 @@
   const EMOTIONAL_WORDS = [
     "insane", "destroyed", "humiliated", "crushed", "disaster", "exposed", 
     "shocking", "brutal", "nightmare", "betrayal", "dominated", "obliterated", 
-    "pathetic", "owned", "ratioed", "canceled", "calling out", "vs"
+    "pathetic", "owned", "ratioed", "canceled", "calling out", "vs", "annihilated",
+    "devastated", "explosive", "outrageous", "terrifying", "horrifying"
   ];
 
   const CERTAINTY_PHRASES = [
     "everyone knows", "the truth is", "this proves", "no one talks about", 
     "what they don't tell you", "wake up", "no debate", "obviously", "undeniable",
-    "always", "never", "everyone", "no one", "all of them"
+    "always", "never", "everyone", "no one", "all of them", "fact is", "guaranteed",
+    "absolutely", "definitely", "without a doubt"
   ];
 
   const HEDGING_WORDS = [
-    "maybe", "possibly", "might", "could", "likely", "perhaps", "seems"
+    "maybe", "possibly", "might", "could", "likely", "perhaps", "seems",
+    "appears", "suggests", "may", "probably", "potentially"
   ];
 
   const HOOK_TYPES = {
-    outrage: ["insane", "betrayal", "destroyed", "disaster", "nightmare"],
-    fear: ["shocking", "warning", "collapse", "end", "danger"],
-    identity_validation: ["truth", "real", "finally", "us", "them", "woke"],
-    hype: ["game changer", "huge", "massive", "revolutionary", "insane"],
-    drama: ["exposed", "pathetic", "humiliated", "drama", "beef"],
-    cynicism: ["scam", "fake", "lies", "propaganda", "sheep"],
-    hope: ["saving", "future", "better", "solution", "win"]
+    outrage: ["insane", "betrayal", "destroyed", "disaster", "nightmare", "outrageous", "disgrace"],
+    fear: ["shocking", "warning", "collapse", "danger", "terrifying", "threat", "crisis"],
+    identity_validation: ["truth", "real", "finally", "us", "them", "woke", "they", "proven"],
+    hype: ["game changer", "huge", "massive", "revolutionary", "breakthrough", "incredible"],
+    drama: ["exposed", "pathetic", "humiliated", "beef", "feud", "controversy"],
+    cynicism: ["scam", "fake", "lies", "propaganda", "sheep", "blind", "fooled"],
+    hope: ["saving", "future", "better", "solution", "win", "triumph", "breakthrough"]
   };
 
   // --- DOM EXTRACTION ---
   function extractVisibleText() {
-    // Simple traversal to get visible text from body, ignoring scripts/forms
+    let text = "";
+    
+    // Strategy 1: Try to find main content area (articles, posts, threads)
+    const contentSelectors = [
+      'article',
+      '[role="article"]',
+      'main',
+      '[data-testid="tweet"]',
+      '.post-content',
+      '.comment-body',
+      '[data-type="post"]'
+    ];
+    
+    let mainContent = null;
+    for (const selector of contentSelectors) {
+      const elements = document.querySelectorAll(selector);
+      if (elements.length > 0) {
+        elements.forEach(el => {
+          if (isVisible(el)) {
+            text += extractTextFromElement(el) + " ";
+          }
+        });
+        if (text.trim().length > 100) {
+          return text;
+        }
+      }
+    }
+    
+    // Strategy 2: Fallback to body traversal
+    text = extractTextFromElement(document.body);
+    return text;
+  }
+
+  function isVisible(element) {
+    if (!element) return false;
+    const style = window.getComputedStyle(element);
+    return style.display !== 'none' && 
+           style.visibility !== 'hidden' && 
+           style.opacity !== '0' &&
+           element.offsetHeight > 0 &&
+           element.offsetWidth > 0;
+  }
+
+  function extractTextFromElement(element) {
     const walker = document.createTreeWalker(
-      document.body,
+      element,
       NodeFilter.SHOW_TEXT,
       {
         acceptNode: function(node) {
           const parent = node.parentNode;
           if (!parent) return NodeFilter.FILTER_REJECT;
           
-          const tag = parent.tagName.toLowerCase();
-          if (['script', 'style', 'noscript', 'iframe', 'input', 'textarea', 'select', 'button'].includes(tag)) {
+          const tag = parent.tagName?.toLowerCase() || '';
+          if (['script', 'style', 'noscript', 'iframe', 'input', 'textarea', 
+               'select', 'button', 'nav', 'header', 'footer'].includes(tag)) {
             return NodeFilter.FILTER_REJECT;
           }
           
-          // Visibility check (expensive, so use sparingly or optimize)
-          // For performance, we might skip this for every node and rely on parent visibility
-          // Heuristic: if parent has 0 offsetHeight, skip
-          if (parent.offsetHeight === 0 || parent.offsetWidth === 0) {
+          if (!isVisible(parent)) {
             return NodeFilter.FILTER_REJECT;
           }
 
@@ -81,13 +125,28 @@
 
     let text = "";
     while (walker.nextNode()) {
-      text += walker.currentNode.nodeValue.trim() + " ";
+      const nodeText = walker.currentNode.nodeValue?.trim() || "";
+      if (nodeText.length > 0) {
+        text += nodeText + " ";
+      }
     }
     return text;
   }
 
   // --- ANALYSIS ENGINE ---
   function analyze(text, dwellSeconds, scrollBacks) {
+    // Input validation
+    if (!text || text.trim().length < CONFIG.MIN_TEXT_LENGTH) {
+      return {
+        emotionalPressure: 0,
+        fixation: 0,
+        distortion: 0,
+        echoDrift: 0,
+        influence: 0,
+        dominantHook: "generic"
+      };
+    }
+
     const lowerText = text.toLowerCase();
     const words = lowerText.split(/\s+/).filter(w => w.length > 0);
     const textLengthFactor = Math.max(words.length, 50);
@@ -95,44 +154,58 @@
     // 1. Emotional Pressure
     let emotionHits = 0;
     EMOTIONAL_WORDS.forEach(word => {
-      if (lowerText.includes(word)) emotionHits++;
+      const regex = new RegExp('\\b' + word + '\\b', 'gi');
+      const matches = text.match(regex);
+      if (matches) emotionHits += matches.length;
     });
 
     const exclamationHits = (text.match(/!/g) || []).length;
-    const capsHits = text.split(/\s+/).filter(w => w.length >= 3 && w === w.toUpperCase() && /[A-Z]/.test(w)).length;
+    const capsHits = text.split(/\s+/).filter(w => 
+      w.length >= 3 && w === w.toUpperCase() && /[A-Z]/.test(w)
+    ).length;
 
-    // Normalized [0,1]
-    // Heuristic: 1 hit per 50 words is "high" pressure? 
-    // Let's say 5 hits in a standard view is max
-    const emotionalPressureRaw = (emotionHits * 1.5 + capsHits + exclamationHits * 0.5) / (textLengthFactor * 0.05);
+    // Recalibrated formula - less generous
+    const emotionalPressureRaw = (emotionHits * 2 + capsHits * 1.5 + exclamationHits * 0.3) / (textLengthFactor * 0.08);
     const emotionalPressure = Math.min(Math.max(emotionalPressureRaw, 0), 1);
 
-    // 2. Fixation
-    const baseFixation = Math.min(dwellSeconds / CONFIG.FIXATION_CAP, 1);
-    const bonuses = (scrollBacks * 0.1) + (dwellSeconds > 10 ? 0.1 : 0);
-    const fixation = Math.min(Math.max(baseFixation + bonuses, 0), 1);
+    // 2. Fixation - Recalibrated to be less generous
+    // Now requires 20+ seconds for meaningful fixation
+    const baseFixation = Math.min(Math.max((dwellSeconds - 10) / CONFIG.FIXATION_CAP, 0), 1);
+    
+    // Scroll backs are now less influential
+    const scrollBackBonus = Math.min(scrollBacks * 0.03, 0.15); // Max 15% bonus
+    const pauseBonus = dwellSeconds > 15 ? 0.05 : 0; // Small bonus for pausing
+    
+    const fixation = Math.min(Math.max(baseFixation + scrollBackBonus + pauseBonus, 0), 1);
 
     // 3. Distortion
     let certaintyHits = 0;
     CERTAINTY_PHRASES.forEach(phrase => {
-      if (lowerText.includes(phrase)) certaintyHits++;
+      const regex = new RegExp(phrase, 'gi');
+      const matches = text.match(regex);
+      if (matches) certaintyHits += matches.length;
     });
     
     let hedgeHits = 0;
     HEDGING_WORDS.forEach(word => {
-      if (lowerText.includes(word)) hedgeHits++;
+      const regex = new RegExp('\\b' + word + '\\b', 'gi');
+      const matches = text.match(regex);
+      if (matches) hedgeHits += matches.length;
     });
 
-    const distortionRaw = (certaintyHits * 2) - (hedgeHits * 0.5);
-    const distortion = Math.min(Math.max(distortionRaw / 4, 0), 1);
+    const distortionRaw = (certaintyHits * 2.5) - (hedgeHits * 0.7);
+    const distortion = Math.min(Math.max(distortionRaw / 5, 0), 1);
 
-    // 4. Dominant Hook
+    // 4. Dominant Hook - Improved fallback logic
     let maxHits = 0;
     let dominantHook = "generic";
+    
     Object.entries(HOOK_TYPES).forEach(([type, keywords]) => {
       let hits = 0;
       keywords.forEach(k => {
-        if (lowerText.includes(k)) hits++;
+        const regex = new RegExp('\\b' + k + '\\b', 'gi');
+        const matches = text.match(regex);
+        if (matches) hits += matches.length;
       });
       if (hits > maxHits) {
         maxHits = hits;
@@ -140,9 +213,13 @@
       }
     });
 
-    // 5. Echo Drift (Mock for now as we don't query history synchronously easily in loop)
-    // We'll calculate this properly when saving.
-    const echoDrift = 0.5; // Placeholder
+    // Better fallback heuristics
+    if (maxHits === 0) {
+      if (emotionalPressure > 0.7) dominantHook = "outrage";
+      else if (distortion > 0.7) dominantHook = "identity_validation";
+      else if (exclamationHits > 3) dominantHook = "hype";
+      // Remove the silly length check
+    }
 
     const influence = (emotionalPressure * 0.6) + (fixation * 0.4);
 
@@ -150,18 +227,21 @@
       emotionalPressure,
       fixation,
       distortion,
-      echoDrift,
+      echoDrift: 0, // Will be calculated from history
       influence,
       dominantHook
     };
   }
 
   function generateInterpretation(metrics) {
-    const { influence, distortion, dominantHook } = metrics;
-    const hookClean = dominantHook.replace('_', ' ');
+    const { influence, distortion, echoDrift, dominantHook } = metrics;
+    const hookClean = dominantHook.replace(/_/g, ' ');
 
     if (influence > 0.7 && distortion > 0.7) {
       return `Strong ${hookClean} hook and certainty tone — this content is overriding your critical filter.`;
+    }
+    if (echoDrift > 0.6) {
+      return `Repeated exposure to ${hookClean} triggers — your baseline response is drifting toward this pattern.`;
     }
     if (influence > 0.7) {
       return `High emotional engagement with ${hookClean} themes — you are fixating on this pattern.`;
@@ -172,7 +252,7 @@
     if (influence < 0.3) {
       return `Low resonance — this content did not significantly alter your state.`;
     }
-    return `Moderate framing pressure — this content has a balanced influence profile.`;
+    return `Moderate framing pressure with ${hookClean} elements — this content has a balanced influence profile.`;
   }
 
   // --- UI INJECTION ---
@@ -263,23 +343,23 @@
     document.getElementById('b-interpretation').textContent = interpretation;
 
     const tagsContainer = document.getElementById('b-tags');
-    tagsContainer.innerHTML = `<span class="boundier-hook-tag">${metrics.dominantHook.replace('_', ' ')}</span>`;
+    tagsContainer.innerHTML = `<span class="boundier-hook-tag">${metrics.dominantHook.replace(/_/g, ' ')}</span>`;
   }
 
-  // --- CORE LOOP ---
+  // --- CORE SCAN LOGIC ---
   function performActiveScan() {
     const text = extractVisibleText();
     const dwell = (Date.now() - state.startTime) / 1000;
     const metrics = analyze(text, dwell, state.scrollBacks);
 
-    // Calculate Echo Drift from history
+    // Calculate REAL Echo Drift from history
     chrome.storage.local.get(['boundier_scans'], (result) => {
       const history = result.boundier_scans || [];
       
       // Echo Drift Logic: Count how many of last 7 scans share same hook
       const lastN = history.slice(0, 7);
       const sameHookCount = lastN.filter(s => s.dominantHook === metrics.dominantHook).length;
-      metrics.echoDrift = Math.min(sameHookCount / 7, 1);
+      metrics.echoDrift = lastN.length > 0 ? Math.min(sameHookCount / Math.max(lastN.length, 1), 1) : 0;
 
       // Update Overlay
       updateOverlay(metrics);
@@ -296,6 +376,8 @@
       
       const newHistory = [scanRecord, ...history].slice(0, 10); // Keep last 10
       chrome.storage.local.set({ boundier_scans: newHistory });
+      
+      state.hasScannedCurrentPage = true;
     });
   }
 
@@ -320,13 +402,14 @@
   // --- EVENT LISTENERS ---
   window.addEventListener('scroll', () => {
     const currentScroll = window.scrollY;
-    if (currentScroll < state.lastScrollY - 50) {
+    // Only count as scroll back if it's a significant upward movement
+    if (currentScroll < state.lastScrollY - 100) {
       state.scrollBacks++;
     }
     state.lastScrollY = currentScroll;
   });
 
-  // Reset dwell timer on major navigation (SPA support heuristic)
+  // Reset dwell timer on major navigation (SPA support)
   let lastUrl = location.href; 
   new MutationObserver(() => {
     if (location.href !== lastUrl) {
@@ -334,12 +417,18 @@
       state.startTime = Date.now();
       state.dwellTime = 0;
       state.scrollBacks = 0;
+      state.hasScannedCurrentPage = false;
       hideScanButton();
     }
   }).observe(document, {subtree: true, childList: true});
 
   // Init
-  injectUI();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectUI);
+  } else {
+    injectUI();
+  }
+  
   setInterval(checkPassiveTriggers, 2000); // Check every 2s
 
 })();
