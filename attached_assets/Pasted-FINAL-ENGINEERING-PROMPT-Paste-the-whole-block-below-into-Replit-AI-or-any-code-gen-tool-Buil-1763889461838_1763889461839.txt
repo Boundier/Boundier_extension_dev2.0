@@ -1,0 +1,252 @@
+FINAL ENGINEERING PROMPT — Paste the whole block below into Replit AI (or any code-gen tool)
+
+Build a polished, mobile-first, standalone mock demo app called "Boundier Demo" that illustrates Conscient Technology influence detection. This is a concept demo, not a production product. Everything must run client-side; no backend or external APIs. The demo must include:
+
+- Home screen with a single CTA "Open Social Media".
+- A fake Social Media app screen containing a vertical feed of mock posts (6–8 posts).
+- A liquid-glass Analysis Sidebar inside the fake Social Media app (swipe/click to open).
+- A Boundier Dashboard screen (the app dash) that displays aggregated results; the dashboard values must always match the live analysis state (shared LocalStorage-based store).
+- Deterministic Conscient engine (rule-based) implemented in `/src/lib/conscientEngine.ts`.
+- Full design system: Cooper Hewitt font only; colors limited to #000543 (primary), #0038FF (accent), white; liquid glass panels using backdrop-filter blur(12px). Provide reduced-transparency & reduced-motion fallbacks and high-contrast mode.
+
+--- TECH STACK
+- React + Vite + TypeScript (preferred)
+- Tailwind CSS
+- framer-motion
+- Chart.js (or simple Canvas) for small charts
+- LocalStorage for persistence
+
+--- DESIGN SYSTEM (MUST FOLLOW)
+- Typography: **Cooper Hewitt** only (import via CSS).
+- Colors: primary `#000543`, accent `#0038FF`, text `white`. Only opacity variants allowed otherwise.
+- Liquid glass: `backdrop-filter: blur(12px)`; sample fills `rgba(255,255,255,0.06)` (light) and `rgba(0,5,67,0.32)` (dark); rounded corners `16px`; soft stroke highlight; smooth transitions `200-250ms`.
+- All UI must be legible on blurred backgrounds; provide "High contrast" and "Reduce transparency" toggles.
+
+--- APP FLOW & UX
+1. **Home Screen**
+   - Centered Boundier logo placeholder
+   - Large CTA: **Open Social Media**
+   - Small footer: "Demo only — data stays on this device."
+
+2. **Social Media Screen (Fake app)**
+   - Header: App title "Social — (mock)" + small "Open Dashboard" button.
+   - Vertical scroll feed with **6 mock posts** (list provided below).
+   - Right-edge visible in-app thin indicator (4–6px) — click/swipe-in opens the Analysis Sidebar.
+   - Tapping any post also opens the Analysis Sidebar for that post.
+   - The Analysis Sidebar must appear **inside** the fake Social Media screen (not an OS overlay), with liquid-glass visuals.
+
+3. **Analysis Sidebar (inside fake Social app)**
+   - Slides in from right with framer-motion animation (~220ms spring).
+   - Width ~300px at 390px layout (adaptive).
+   - Shows:
+     - Post summary (title, time, mock thumbnail)
+     - **Influence Vector**: fear, urgency, hype, authority, curiosity, visual_hype (numeric 0–1 + horizontal bars)
+     - **Response Vector**: engagement, hesitation, fixation, clickbait_response (0–1)
+     - One-line explanation for the top 2 scoring influence types (deterministic text)
+     - "Apply to Dashboard" button (writes the event to the shared store) — also auto-sync on open
+     - Close button
+   - When the sidebar opens or a user interacts with a post, the Conscient engine runs on that post and writes an influence-response event to LocalStorage.
+
+4. **Boundier Dashboard Screen (App Dash)**
+   - Accessible via main nav or "Open Dashboard" button.
+   - Shows aggregated values computed from the same LocalStorage store:
+     - Current Vulnerability Profile (per-dimension EWMAs)
+     - Pattern Graph (7-point sliding array) visualized as a small line chart
+     - Session counts by influence type (top 3 listed)
+   - The Dashboard must reflect, in real time, any analysis performed in the Social Media Screen (same underlying data model).
+
+--- FILE STRUCTURE (CREATE EXACTLY)
+/boundier-demo
+  /public
+    index.html
+  /src
+    main.tsx
+    App.tsx
+    /screens
+      Home.tsx
+      SocialFeed.tsx
+      Dashboard.tsx
+    /components
+      PostCard.tsx
+      AnalysisSidebar.tsx
+      EdgeIndicator.tsx
+      SmallBar.tsx
+      VulnerabilityRadar.tsx
+      PatternLineChart.tsx
+      TopNav.tsx
+      Footer.tsx
+    /lib
+      conscientEngine.ts
+      storage.ts
+    /data
+      mockPosts.ts
+    /styles
+      tailwind.css
+      glass.css
+  README.md
+  package.json
+  vite.config.ts
+  tsconfig.json (if TS)
+
+--- MOCK POSTS (exact dataset to include in /src/data/mockPosts.ts)
+Provide these 7 mock posts (JS objects). Use these exact fields: id,type,title,text,thumbnail:{saturation,faces,expression},audioFlag:{high_tension,speechRate},punctuationIntensity,capsIntensity,clickbaitWords,timestamp.
+
+1) id: "post-1"
+   type: "headline"
+   title: "Experts warn board exams may be harder this year"
+   text: "New study suggests changing patterns will increase difficulty."
+   thumbnail: { saturation: 0.2, faces: 0, expression: "neutral" }
+   audioFlag: { high_tension: false, speechRate: 1.0 }
+   punctuationIntensity: 0
+   capsIntensity: 0
+   clickbaitWords: []
+   timestamp: (now - 3 hours)
+
+2) id: "post-2"
+   type: "video"
+   title: "This ONE trick will ruin your exam score — watch now!"
+   text: "Students accidentally ignore this crucial step."
+   thumbnail: { saturation: 0.9, faces: 1, expression: "shocked" }
+   audioFlag: { high_tension: true, speechRate: 1.4 }
+   punctuationIntensity: 2
+   capsIntensity: 1
+   clickbaitWords: ["one trick","ruin","watch now"]
+   timestamp: (now - 1 day)
+
+3) id: "post-3"
+   type: "image"
+   title: "Only 2 hours left to claim the scholarship!"
+   text: "Limited seats, apply immediately."
+   thumbnail: { saturation: 0.8, faces: 0, expression: "neutral" }
+   audioFlag: { high_tension: true, speechRate: 1.2 }
+   punctuationIntensity: 1
+   capsIntensity: 1
+   clickbaitWords: ["only 2 hours","limited"]
+   timestamp: (now - 10 hours)
+
+4) id: "post-4"
+   type: "headline"
+   title: "You won’t believe what happened at the exam center..."
+   text: "A bizarre turn of events shocked students."
+   thumbnail: { saturation: 0.85, faces: 1, expression: "shocked" }
+   audioFlag: { high_tension: true, speechRate: 1.6 }
+   punctuationIntensity: 3
+   capsIntensity: 0
+   clickbaitWords: ["you won't believe","shocking"]
+   timestamp: (now - 4 days)
+
+5) id: "post-5"
+   type: "image"
+   title: "How study groups helped me improve"
+   text: "A student shares practical tips with evidence."
+   thumbnail: { saturation: 0.25, faces: 2, expression: "neutral" }
+   audioFlag: { high_tension: false, speechRate: 0.95 }
+   punctuationIntensity: 0
+   capsIntensity: 0
+   clickbaitWords: []
+   timestamp: (now - 2 days)
+
+6) id: "post-6"
+   type: "video"
+   title: "Survey: Teachers reveal the top mistakes students make"
+   text: "Research-based suggestions inside."
+   thumbnail: { saturation: 0.3, faces: 1, expression: "neutral" }
+   audioFlag: { high_tension: false, speechRate: 1.0 }
+   punctuationIntensity: 0
+   capsIntensity: 0
+   clickbaitWords: ["survey","reveal"]
+   timestamp: (now - 5 days)
+
+7) id: "post-7"
+   type: "headline"
+   title: "People like you are skipping this chapter — experts say"
+   text: "Identity framing and pressure to conform."
+   thumbnail: { saturation: 0.4, faces: 0, expression: "neutral" }
+   audioFlag: { high_tension: false, speechRate: 1.0 }
+   punctuationIntensity: 0
+   capsIntensity: 0
+   clickbaitWords: ["people like you"]
+   timestamp: (now - 6 hours)
+
+--- CONSCIENT ENGINE (implement in /src/lib/conscientEngine.ts)
+Export functions:
+- analyzePost(post) => returns { influenceVector, responseVector, explanation }
+- updateVulnerabilityProfile(influenceVector, responseVector) => updates stored EWMA per dimension
+- getPatternGraph() => returns 7-point sliding array
+- getVulnerabilityProfile() => returns current EWMA profile
+- resetData() => clear localStorage
+
+Implement these deterministic rules (exact behavior):
+
+Influence Vector calculation pseudo-rules:
+- start values 0
+- if title contains any of ["warn","danger","risk","ruin","experts warn"] => fear += 0.6
+- if audioFlag.high_tension => fear += 0.2
+- if thumbnail.expression === "shocked" => fear += 0.2
+- urgency = 0; if title contains ["now","today","last","only","limited"] => urgency += 0.5; if punctuationIntensity >=1 or capsIntensity>=1 => urgency += 0.2; if thumbnail.saturation > 0.7 => urgency += 0.2
+- hype = 0; if clickbaitWords.length>0 => hype += 0.6; if title includes ["you won't believe","shocking"] => hype += 0.2
+- authority = 0; if title includes ["expert","study","research","survey","experts"] => authority += 0.5
+- curiosity = 0; if title contains "?" or "..." or starts with "guess" etc => curiosity += 0.4
+- visual_hype = clamp(thumbnail.saturation * 0.7 + (thumbnail.faces > 0 ? 0.1 : 0))
+- After computing, clamp all to [0,1]
+
+Response Vector calculation pseudo-rules:
+- engagement = clamp(dwellTimeMs / 8000, 0,1)  // demo max dwell 8s
+- hesitation = 0; if user taps then quickly scrolls (dwell <300ms) => 0.6; else small values
+- fixation = 1 if user opens same post twice or dwellTime > 6000ms; else scaled
+- clickbait_response = 1 if user clicks within 2s of first view; else 0
+
+Vulnerability Profile:
+- For each influence dimension: ewma_new = 0.15*responseValue + 0.85*ewma_old
+- Store in localStorage under key 'boundier_profile'
+
+Pattern Graph:
+- Each event pushes a scalar intensity = sum(influenceVector)/numDimensions
+- Maintain last 7 events; store under key 'boundier_pattern'
+
+--- DATA FLOW & SYNC REQUIREMENT
+- When Analysis Sidebar runs analyzePost(post) it must write the resulting event into LocalStorage events array (key: 'boundier_events'), update the vulnerability profile and pattern graph.
+- Dashboard reads from 'boundier_profile' and 'boundier_pattern' and displays identical numbers.
+- Provide an "Apply to Dashboard" button that forces analysis and immediate sync for demo clarity.
+
+--- UI DETAILS
+- All components use Cooper Hewitt font; load via CSS.
+- Primary background uses #000543; accent UI elements use #0038FF.
+- Text and icons use white on dark areas; ensure good contrast with blurred backgrounds.
+- Panel open/close animations must be smooth and use framer-motion.
+- Provide small haptic/vibration simulation on mobile (use Vibration API where available) when "Apply to Dashboard".
+- Add small accessibility toggles on Home: "Reduce motion" and "Reduce transparency" that change CSS behavior.
+
+--- FILES TO PRODUCE (exact)
+- /src/screens/Home.tsx (Home screen)
+- /src/screens/SocialFeed.tsx (feed screen)
+- /src/screens/Dashboard.tsx (Boundier dash)
+- /src/components/PostCard.tsx
+- /src/components/AnalysisSidebar.tsx
+- /src/components/EdgeIndicator.tsx
+- /src/lib/conscientEngine.ts
+- /src/lib/storage.ts (wrapper for localStorage keys)
+- /src/data/mockPosts.ts (the 7 posts above)
+- /src/styles/tailwind.css
+- /src/styles/glass.css
+- README.md (run instructions, explanation of engine rules, privacy note)
+
+--- ACCEPTANCE CRITERIA (must be satisfied)
+1. The app launches to Home with "Open Social Media" CTA.
+2. Social feed displays the 7 mock posts exactly as defined.
+3. Tapping a post opens the Analysis Sidebar inside the Social feed.
+4. Analysis runs deterministically and writes event + profile + pattern to localStorage.
+5. Dashboard displays the same profile & pattern in real time (no manual refresh required).
+6. Colors, font, and liquid-glass styling strictly followed.
+7. Accessibility toggles (reduce motion/transparency) function.
+8. No backend; app runs with `npm install` && `npm run dev`.
+9. README documents how scoring works and how to reset/export data.
+
+--- DOCUMENTATION
+In README.md include:
+- Setup & run instructions
+- Exact scoring rules (copy the pseudo-rules above)
+- Where data is stored in localStorage and how to reset
+- Privacy statement: "Demo only. All data stays local to your browser."
+
+END OF PROMPT — produce the complete working project exactly as specified above.

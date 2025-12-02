@@ -1,0 +1,162 @@
+You are designing ONLY the UI for the Boundier Chrome extension.
+No backend code. No scraping logic. No scoring logic. Design only.
+
+==================================================
+PHILOSOPHY
+==================================================
+Visual language must match the Boundier prototype:
+- "Liquid glass" panels
+- Cold blue tech aesthetic
+- Clean, quiet, minimal
+- Zero dopamine-bait visuals
+
+The extension UI should feel like a diagnostic instrument,
+not entertainment and not social media.
+
+==================================================
+GLOBAL DESIGN SYSTEM
+==================================================
+
+FONT:
+  - Cooper Hewitt only
+  - Light / Regular / Medium / Semibold
+  - No bold paragraphs. Titles only.
+
+COLORS:
+  #000543 (primary dark)
+  #0038FF (accent blue)
+  #FFFFFF (pure white)
+  rgba(255,255,255,0.07) (light glass)
+  rgba(0,5,67,0.32) (dark glass tint)
+
+GLASS PANEL STYLE:
+  background: rgba(0,5,67,0.32)
+  backdrop-filter: blur(12px)
+  border-radius: 16px
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25)
+  stroke: 1px solid rgba(255,255,255,0.10)
+
+MOTION:
+  Slide-ins: 220ms spring
+  Fade: 180ms
+  Micro-parallax: panel shifts 2–4px on scroll
+
+SPACING:
+  Major section padding: 20px
+  Internal component padding: 16px
+  Element gaps: 12px
+
+Icon style:
+  geometric, monochrome, no gradients
+
+==================================================
+UI SCREENS TO DESIGN
+==================================================
+
+1) Floating Scan Button (on page overlay)
+-----------------------------------------
+Placement: bottom-right
+Appearance: circular liquid-glass button with accent glow
+Content:
+  icon: minimal radar glyph
+  label: "Scan"
+Interaction:
+  tap → opens Scan Panel
+
+2) Scan Panel (slide-in from right)
+-----------------------------------
+Width: ~360px
+Glass panel layout
+
+Sections:
+  (A) Header
+      - Title: "Analysis Result"
+      - Close button: "×"
+
+  (B) Metric Blocks
+      3 parallel rows:
+        Influence
+        Distortion
+        Echo Drift
+      Each row contains:
+        - label left (small uppercase)
+        - value right (numeric, 0.00)
+        - bar graph
+          background: faint white track
+          fill: accent blue for Influence
+                red for Distortion
+                yellow for Echo Drift
+
+  (C) Explanation
+      1–2 line text, 70% white opacity
+
+  (D) Action button
+      - label: "View Dashboard"
+      - solid accent blue button
+      - white text, soft glow hover
+
+3) Popup (when clicking extension icon)
+---------------------------------------
+Glass panel container
+
+Sections:
+  (A) Home 
+  B STATS
+
+
+  (C) History 
+      Vertical stack, each item =
+        - site favicon
+        - hostname
+        - timestamp
+        - three tiny bars (Influence / Distortion / Echo Drift)
+      Tap → expands to show full values
+
+  (D) Profile Panel
+      mini “sensitivity card”
+      three compact bars
+      label: "Your Long-Term Pattern"
+
+  (E) Rewards Panel
+      Title
+      points counter
+      badge icons (locked/unlocked display)
+      layout stays minimal, no gamified glitter
+
+  (F) Buttons row
+      left: "Clear History" (glass outline)
+      right: "Close" (plain, no glow)
+
+(Ignore whats mentioned byt existing)
+
+==================================================
+INTERACTION RULES
+==================================================
+
+- No pop-ups that take over the whole screen
+- No sound, no confetti, no confetti-adjacent demons
+- UI must never shame users
+- Load states use soft shimmer only
+- Panels and lists always scroll instead of shrinking text
+
+==================================================
+MOBILE / SMALL WINDOW ADAPTATION
+==================================================
+- Maximum width: 420px
+- Content center-aligned
+- Buttons full-width with 12px corner radius
+
+==================================================
+DO NOT DO
+==================================================
+- No gradients
+- No emoji
+- No neon cyberpunk nonsense
+- No serif fonts
+- No notifications
+- No skeletons shaped like "cards feed"
+- No dopamine-engineered UX
+
+==================================================
+
+

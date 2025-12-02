@@ -1,0 +1,208 @@
+You are to build ONLY the backend logic for Boundier. 
+NO UI code. NO CSS. NO HTML. NO design decisions. Backend code ONLY.
+
+Target environment:
+- Chrome extension / browser extension runtime
+- JavaScript
+- Must run reliably on low-end laptops ("potato devices") with weak CPU and no GPU
+- NO internet calls and NO remote inference
+- MUST remain fast and lightweight
+
+==================================================
+CORE BACKEND JOB
+==================================================
+
+Take extracted page text (already supplied by frontend) and output:
+
+{
+  influence: number (0–1),
+  distortion: number (0–1),
+  echoDrift: number (0–1),
+  explanation: string
+}
+
+Then update a local profile + reward system and return:
+
+{
+  result: {...},
+  profile: {...},
+  rewards: {...}
+}
+
+Everything MUST happen locally, offline, client-side.
+
+==================================================
+ARCHITECTURE
+==================================================
+
+Backend lives inside background.js and consists of 5 modules:
+- analysisEngine  (computes scores)
+- storageEngine   (stores history & profile in chrome.storage.local)
+- profileEngine   (maintains user vulnerability sensitivity over time)
+- rewardsEngine   (points + badges)
+- messageRouter   (handles messages from content script & popup)
+
+No models, no LLMs, no heavy inference. 
+Backend MUST be optimized for slow hardware.
+
+==================================================
+SCORE CALCULATION RULES
+==================================================
+
+Input: text (string ≤ 15000 characters, already pre-cleaned)
+
+Step 1: Lowercase string and tokenize by whitespace.
+
+Step 2: Count occurrences from the following dictionaries:
+
+urgencyTerms:
+["now","immediately","urgent","breaking","alert","deadline","act now","limited","final chance"]
+
+emotionalTerms:
+["shocking","heartbreaking","outrage","furious","horrific","miracle","hero","monster"]
+
+extremeTerms:
+["destroy","traitor","enemy","evil","corrupt","disgrace","radical","insane","worst","catastrophe"]
+
+framingTerms:
+["obviously","clearly","undeniably","proven","truth","exposed","secret","they don't want you to know"]
+
+Step 3: wordCount = max(1, #tokens)
+
+Step 4: Convert counts to densities:
+density = min(1, (count / wordCount) * 30)
+
+Step 5: Final score formulas:
+
+influence =
+  min(1,
+    density(urgency) * 0.5 +
+    density(framing) * 0.5 +
+    0.1
+  )
+
+distortion =
+  min(1,
+    density(emotional) * 0.5 +
+    density(extreme) * 0.5 +
+    0.1
+  )
+
+echoDrift =
+  min(1,
+    distortion * 0.7 +
+    influence * 0.3
+  )
+
+Round all final scores to 2 decimals.
+
+Step 6: Explanation:
+if echoDrift > 0.7  → "Patterns consistent with narrow, repetitive perspectives."
+else if distortion > 0.7 → "High emotional and extreme language signals."
+else if influence > 0.7 → "Strong urgency and framing cues aimed at steering attention."
+else → "Content appears relatively moderate on influence signals."
+
+==================================================
+PROFILE SYSTEM
+==================================================
+
+Maintain 3 sensitivity metrics via Exponential Moving Average:
+
+sensitivity.influence
+sensitivity.distortion
+sensitivity.echoDrift
+
+When a new scan result is saved:
+newSensitivity = oldSensitivity * 0.8 + newScore * 0.2
+
+==================================================
+LOCAL HISTORY
+==================================================
+
+Store each scan as:
+
+{
+  id: string,
+  url: string,
+  host: string,
+  timestamp: number,
+  influence: number,
+  distortion: number,
+  echoDrift: number
+}
+
+History length limit: 10 (drop oldest)
+
+==================================================
+REWARDS SYSTEM
+==================================================
+
+Triggered on scan success:
+
+points += 1
+track unique hosts for diverseSourcesCount
+
+Badges unlock based on:
+- reflectionsCount >= 1        → first-reflection
+- reflectionsCount >= 7        → seven-reflections
+- diverseSourcesCount >= 3     → three-sources
+- diverseSourcesCount >= 7     → seven-sources
+- intentionDays >= 3           → intention-3
+- intentionDays >= 10          → intention-10
+
+Badges MUST be managed only by backend.
+
+==================================================
+MESSAGE CONTRACT (required)
+==================================================
+
+Incoming:
+{ type: "SCAN_PAGE", text: string, url: string, host: string }
+
+Outgoing:
+{
+  ok: true,
+  result: { influence, distortion, echoDrift, explanation },
+  profile: { ... },
+  rewards: { ... }
+}
+
+Also implement:
+{ type: "GET_HISTORY" }
+{ type: "CLEAR_HISTORY" }
+{ type: "GET_REWARDS" }
+
+==================================================
+PERFORMANCE REQUIREMENTS
+==================================================
+
+- Must run comfortably on low-end machines
+- Target scan time < 50ms on normal hardware
+- No async unless necessary
+- No recursion
+- No re-processing entire history
+- No storing the raw text
+- No dynamic imports
+- No dependencies
+
+==================================================
+SECURITY & PRIVACY
+==================================================
+
+- NEVER send text or scores to any server
+- NEVER collect privacy data, browsing history, cookies, or identifiers
+- No analytics
+- No fingerprinting
+- All processing local
+
+==================================================
+DELIVERABLE
+==================================================
+
+Return only backend code (no UI) that can be placed inside background.js in a Chrome extension and run as-is without modification.
+
+NO placeholders.
+NO TODO comments.
+NO "example" functions.
+Full production code only.
+

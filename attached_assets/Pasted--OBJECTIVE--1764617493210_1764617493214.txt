@@ -1,0 +1,189 @@
+==================================================
+OBJECTIVE
+==================================================
+
+Take extracted page text (already provided by the content script)
+and compute 3 output values + one explanation:
+
+{
+  influence: 0–1,
+  distortion: 0–1,
+  echoDrift: 0–1,
+  explanation: string
+}
+
+Then update a local profile and reward system.
+Return:
+
+{
+  result,
+  profile,
+  rewards
+}
+
+==================================================
+BACKEND MODULES
+==================================================
+
+The backend in background.js MUST contain 5 modules:
+
+analysisEngine
+storageEngine
+profileEngine
+rewardsEngine
+messageRouter
+
+All logic must be synchronous and fast.
+No async except for chrome.storage access.
+
+==================================================
+ANALYSIS ENGINE (NO HARDCODED WORD LISTS)
+==================================================
+
+Input: string text (≤ 15000 chars)
+
+1) Preprocessing
+- lowercase
+- split into sentences (regex)
+- tokenize sentences into words (split on whitespace)
+
+2) Extract pure linguistic signals (statistical, NO vocabulary tables)
+
+For each sentence:
+- sentimentIntensity  = (#positiveWords - #negativeWords) / sentenceLength
+  positiveWords = common positive valence list (tiny, fixed, not topic-specific)
+  negativeWords = common negative valence list (tiny, fixed, not topic-specific)
+  (these lists must be <= 60 items combined to stay cheap)
+
+- sentimentVolatility = absolute change between sequential sentence sentiments
+- modalityScore       = count of modal verbs / total verbs
+  (must/should/cannot/always/never/required)
+
+- superlativeScore    = count of comparative/superlative adjectives / adjectives
+  (more/most/better/best/worst/less/least)
+
+- absolutismScore     = count of definite language / total sentences
+  (always/never/no alternatives/no exceptions/cannot be questioned)
+  *these are patterns not keywords — detect via regex like /(always|never|no\s+\w+|cannot\s+\w+)/
+
+- pronounPolarity     = ratio of (we/us/our) vs (they/them/their)
+
+Aggregate signals across the entire text using mean().
+
+3) Compute composite scores
+influence =
+  modalScore * 0.5 +
+  sentimentVolatility * 0.3 +
+  superlativeScore * 0.2
+
+distortion =
+  sentimentIntensity.abs() * 0.5 +
+  absolutismScore * 0.3 +
+  superlativeScore * 0.2
+
+echoDrift =
+  distortion * 0.6 +
+  influence * 0.4
+
+Clamp all scores 0–1 and round to 2 decimals.
+
+4) Explanation logic
+if echoDrift > 0.7:
+  "Patterns consistent with narrow and repetitive viewpoints."
+else if distortion > 0.7:
+  "Strong emotional and absolutist language."
+else if influence > 0.7:
+  "High attention-steering and modal pressure."
+else:
+  "Content exhibits moderate linguistic influence signals."
+
+==================================================
+PROFILE ENGINE (PER-USER SENSITIVITY)
+==================================================
+
+After each scan:
+Update sensitivities using Exponential Moving Average:
+
+sensitivity.influence  = 0.8 * old + 0.2 * new
+sensitivity.distortion = 0.8 * old + 0.2 * new
+sensitivity.echoDrift  = 0.8 * old + 0.2 * new
+
+==================================================
+LOCAL HISTORY
+==================================================
+
+Store each scan result as:
+
+{
+  id,
+  url,
+  host,
+  timestamp,
+  influence,
+  distortion,
+  echoDrift
+}
+
+Keep latest 10 only. Never store raw text.
+
+==================================================
+REWARDS ENGINE
+==================================================
+
+On successful scan:
+points += 1
+track unique hosts for diverseSourcesCount
+
+Badge unlock rules:
+first-reflection          reflectionsCount >= 1
+seven-reflections         reflectionsCount >= 7
+three-sources             diverseSourcesCount >= 3
+seven-sources             diverseSourcesCount >= 7
+intention-3               intentionDays >= 3
+intention-10              intentionDays >= 10
+
+Backend decides badges — UI must not.
+
+==================================================
+MESSAGE ROUTER
+==================================================
+
+Incoming:
+{ type: "SCAN_PAGE", text, url, host }
+
+Response:
+{
+  ok: true,
+  result,
+  profile,
+  rewards
+}
+
+Also implement:
+{ type: "GET_HISTORY" }
+{ type: "CLEAR_HISTORY" }
+{ type: "GET_REWARDS" }
+with correct responses.
+
+==================================================
+PERFORMANCE REQUIREMENTS
+==================================================
+
+- Must run comfortably on very low-end hardware
+- No ML model loading
+- No WebGPU
+- No remote inference
+- Scan execution target: < 50 ms
+- No dynamic imports, no dependencies
+
+==================================================
+SECURITY AND PRIVACY
+==================================================
+
+- Never upload data
+- Never collect browsing behavior beyond execution context
+- Never store raw page text
+- No analytics, no telemetry, no tracking
+- All computation is offline and deterministic
+
+==================================================

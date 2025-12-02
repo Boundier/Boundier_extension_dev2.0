@@ -1,0 +1,102 @@
+Design ONLY the UI and UX for Boundier. 
+Do NOT generate or mention backend code, APIs, Chrome extension logic, or databases.
+
+The UI must represent how Boundier analyzes Influence, Distortion, and Echo Drift in digital content — but the interface should not show raw text extraction or technical complexity.
+
+==================================================
+BRAND IDENTITY
+==================================================
+
+Visual tone:
+• Calm, analytical, not alarmist
+• Minimal, glass aesthetic
+• Feels like a “lens” over digital reality
+
+Tagline:
+"You See It. We Read It."
+
+==================================================
+GLOBAL STYLE SYSTEM
+==================================================
+
+Font:
+• Cooper Hewitt (only)
+• Light / Regular / Medium / Semibold
+• Bold reserved for titles and metrics only
+
+Colors:
+• Primary Dark: #000543
+• Accent Blue: #0038FF
+• Pure White: #FFFFFF
+• Liquid-glass tints:
+  - rgba(255,255,255,0.07)
+  - rgba(0,5,67,0.32)
+
+No random extra colors. No grays other than transparent white.
+
+Aesthetic:
+• Liquid glass
+• Blur depth: 12px
+• Border radius: 16px
+• Subtle inner highlight stroke: 1px rgba(255,255,255,0.10)
+• Soft outer shadow: 0px 4px 20px rgba(0,0,0,0.25)
+
+Motion:
+• Spring slide-in 220ms
+• Fade-in 180ms
+• Micro-parallax on scroll (panel shifts 2–4px)
+
+==================================================
+LAYOUTS REQUIRED
+==================================================
+
+1. *Landing Page*
+   • Centered wordmark
+   • Tagline under it: “You See It. We Read It.”
+   • Short subtitle explaining Boundier in one sentence
+   • A glass button: “Watch Demo”
+   • Below it, a mobile phone frame showing an embedded demo video
+   • Caption under the phone:
+     “How digital content influences you — visualized.”
+
+2. *Feature Section*
+   (Three horizontal cards)
+   Card 1 — Influence
+   Description: “Shows how content pulls your attention and shapes your perception.”
+   Card 2 — Distortion
+   Description: “Exposes emotional overload and framing tricks hidden in plain sight.”
+   Card 3 — Echo Drift
+   Description: “Detects when your feed collapses into a single repeated viewpoint.”
+   Each card uses a glass panel.
+
+3. *Call to Action*
+   • Title: “Join the Private Beta”
+   • Description: “Be among the first to see your digital reality clearly.”
+   • Button: “Join Waitlist”
+     (glass button with accent blue outline)
+
+4. *Footer*
+   • Small Boundier wordmark
+   • Tagline: “You See It. We Read It.”
+   • Icons: YouTube and GitHub, with links
+   • Button: “Email Us”
+     → mailto:boundierofficial@gmail.com
+   • Copyright: “© 2025 Boundier. All rights reserved.”
+
+==================================================
+RESTRICTIONS
+==================================================
+• No stock illustrations, no explosion of icons, no cartoon characters
+• No AI-generated fake “screenshots” of social media
+• No chat bubbles, speech balloons, or comic-style UI
+• No gradient noise
+• Avoid corporate SaaS clichés (“hero blob shapes” etc.)
+
+==================================================
+DELIVERABLES
+==================================================
+• Provide full layout with spacing, colors, motion, and UX decisions
+• Provide component breakdown (buttons, cards, chart containers)
+• Provide mobile-first and desktop versions
+• Provide a section showing how video fits inside the mobile frame
+• Provide a Figma-ready spec or HTML layout — but NO backend code
