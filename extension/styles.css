@@ -1,0 +1,340 @@
+/* Boundier Glass Style */
+
+@font-face {
+  font-family: 'Cooper Hewitt';
+  src: url('fonts/CooperHewitt-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Cooper Hewitt';
+  src: url('fonts/CooperHewitt-Heavy.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+}
+
+:root {
+  --boundier-dark: #000543;
+  --boundier-blue: #0038FF;
+  --boundier-white: #FFFFFF;
+  --boundier-glass-light: rgba(255, 255, 255, 0.07);
+  --boundier-glass-dark: rgba(0, 5, 67, 0.32);
+  --boundier-shadow: 0px 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Scan Button */
+#boundier-scan-btn {
+  position: fixed;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2147483646; /* High z-index */
+  background: rgba(0, 56, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 12px 6px;
+  color: white;
+  font-family: 'Cooper Hewitt', sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  writing-mode: vertical-rl;
+  cursor: pointer;
+  box-shadow: 0 0 12px #0038FF88;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  scale: 0.8;
+}
+
+#boundier-scan-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  scale: 1;
+}
+
+#boundier-scan-btn:hover {
+  transform: translateY(-50%) scale(1.03);
+  box-shadow: 0 0 20px #0038FF;
+  background: rgba(0, 56, 255, 0.6);
+}
+
+#boundier-scan-btn:active {
+  transform: translateY(-50%) scale(0.97);
+}
+
+/* Overlay Panel */
+#boundier-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 320px;
+  z-index: 2147483647;
+  background: var(--boundier-glass-dark);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: var(--boundier-shadow);
+  color: white;
+  font-family: 'Cooper Hewitt', sans-serif;
+  transform: translateX(100%);
+  transition: transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+#boundier-overlay.open {
+  transform: translateX(0);
+}
+
+.boundier-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.boundier-title {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.boundier-blue {
+  color: var(--boundier-blue);
+}
+
+.boundier-subtitle {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  opacity: 0.5;
+  margin-top: 4px;
+}
+
+.boundier-close {
+  background: none;
+  border: none;
+  color: white;
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: 24px;
+  padding: 0;
+  line-height: 1;
+}
+
+.boundier-close:hover {
+  opacity: 1;
+}
+
+.boundier-metric {
+  margin-bottom: 24px;
+}
+
+.boundier-metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.boundier-label {
+  font-size: 12px;
+  font-weight: bold;
+  opacity: 0.8;
+}
+
+.boundier-value {
+  font-size: 32px;
+  font-weight: 300;
+  color: var(--boundier-blue);
+  line-height: 1;
+}
+
+.boundier-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.boundier-bar-fill {
+  height: 100%;
+  background: var(--boundier-blue);
+  width: 0%;
+  transition: width 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 0 8px var(--boundier-blue);
+}
+
+.boundier-secondary-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 8px;
+}
+
+.boundier-mini-metric .boundier-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.5;
+}
+
+.boundier-mini-metric .boundier-value {
+  font-size: 20px;
+  color: white;
+  margin: 4px 0;
+}
+
+.boundier-mini-metric .boundier-bar-fill {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: none;
+}
+
+.boundier-interpretation {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 300;
+  opacity: 0.9;
+}
+
+.boundier-hook-tag {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 4px 8px;
+  background: rgba(0, 56, 255, 0.2);
+  border: 1px solid rgba(0, 56, 255, 0.3);
+  color: var(--boundier-blue);
+  border-radius: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: bold;
+}
+
+/* Popup Specifics */
+body.popup-body {
+  width: 320px;
+  height: 480px;
+  margin: 0;
+  background: var(--boundier-dark);
+  color: white;
+  overflow: hidden;
+  font-family: 'Cooper Hewitt', sans-serif;
+}
+
+.popup-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.popup-header {
+  padding: 16px;
+  background: rgba(0, 5, 67, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popup-logo {
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+
+.popup-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.history-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+}
+
+.history-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.card-time {
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.card-hook {
+  font-size: 10px;
+  color: var(--boundier-blue);
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.card-text {
+  font-size: 12px;
+  opacity: 0.9;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.card-bar {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.card-bar-fill {
+  height: 100%;
+  background: var(--boundier-blue);
+}
+
+.popup-footer {
+  padding: 12px;
+  background: rgba(0, 5, 67, 0.8);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.clear-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--boundier-blue);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.clear-btn:hover {
+  opacity: 0.9;
+}
