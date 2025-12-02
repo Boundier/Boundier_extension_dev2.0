@@ -31,37 +31,112 @@
     uiInjected: false
   };
 
-  // --- HEURISTICS ---
-  const EMOTIONAL_WORDS = [
-    "insane", "destroyed", "humiliated", "crushed", "disaster", "exposed", 
-    "shocking", "brutal", "nightmare", "betrayal", "dominated", "obliterated", 
-    "pathetic", "owned", "ratioed", "canceled", "calling out", "vs", "annihilated",
-    "devastated", "explosive", "outrageous", "terrifying", "horrifying", "breaking",
-    "urgent", "crisis", "chaos", "fury", "rage", "outrage", "scandal", "bombshell",
-    "slammed", "blasts", "rips", "destroys", "obliterates", "eviscerates"
-  ];
+  // --- ENHANCED HEURISTICS ENGINE ---
+  
+  // Emotional intensity lexicon (weighted by intensity 1-3)
+  const EMOTIONAL_LEXICON = {
+    // High intensity (weight 3)
+    high: [
+      "insane", "destroyed", "humiliated", "crushed", "disaster", "obliterated",
+      "annihilated", "devastated", "horrifying", "terrifying", "nightmare", "betrayal",
+      "explosive", "bombshell", "scandal", "outrageous", "catastrophic", "apocalyptic",
+      "genocide", "massacre", "tyranny", "evil", "demonic", "satanic", "murderous"
+    ],
+    // Medium intensity (weight 2)
+    medium: [
+      "shocking", "brutal", "pathetic", "disgusting", "shameful", "disgrace",
+      "exposed", "rips", "slammed", "blasts", "destroys", "eviscerates", "chaos",
+      "fury", "rage", "crisis", "urgent", "breaking", "controversial", "alarming",
+      "disturbing", "infuriating", "ridiculous", "absurd", "unbelievable"
+    ],
+    // Lower intensity (weight 1)
+    low: [
+      "upset", "frustrated", "concerned", "worried", "disappointed", "annoyed",
+      "surprising", "unexpected", "unusual", "strange", "odd", "interesting",
+      "remarkable", "notable", "significant", "important", "critical"
+    ]
+  };
 
-  const CERTAINTY_PHRASES = [
-    "everyone knows", "the truth is", "this proves", "no one talks about", 
-    "what they don't tell you", "wake up", "no debate", "obviously", "undeniable",
-    "always", "never", "everyone", "no one", "all of them", "fact is", "guaranteed",
-    "absolutely", "definitely", "without a doubt", "100%", "totally", "completely",
-    "unquestionably", "clearly"
-  ];
+  // Certainty and absolutism patterns
+  const CERTAINTY_PATTERNS = {
+    // Absolute claims (high distortion)
+    absolutes: [
+      "everyone knows", "nobody can deny", "the truth is", "fact is",
+      "proven fact", "undeniable", "unquestionable", "without exception",
+      "always", "never", "all of them", "none of them", "100%", "zero chance",
+      "impossible", "guaranteed", "certain", "obvious", "clearly"
+    ],
+    // Dismissive certainty
+    dismissive: [
+      "wake up", "open your eyes", "how can you not see", "anyone with a brain",
+      "only an idiot", "no reasonable person", "no sane person", "anyone who thinks",
+      "if you believe", "imagine thinking", "imagine believing"
+    ],
+    // Appeal to hidden truth
+    hidden_truth: [
+      "what they don't tell you", "what they don't want you to know",
+      "the real story", "the truth they hide", "mainstream won't report",
+      "media won't show", "they're lying about", "cover up", "conspiracy",
+      "deep state", "puppet masters", "controlled opposition"
+    ]
+  };
 
-  const HEDGING_WORDS = [
+  // Hedging and nuance indicators (reduce distortion score)
+  const NUANCE_INDICATORS = [
     "maybe", "possibly", "might", "could", "likely", "perhaps", "seems",
-    "appears", "suggests", "may", "probably", "potentially", "reportedly"
+    "appears", "suggests", "may", "probably", "potentially", "reportedly",
+    "according to", "research suggests", "studies indicate", "some argue",
+    "on the other hand", "however", "although", "while", "nuanced",
+    "complex", "multifaceted", "depends on", "context matters"
   ];
 
+  // Rhetorical manipulation patterns
+  const RHETORICAL_PATTERNS = {
+    loaded_questions: [
+      "why won't they", "why can't they just", "why do they always",
+      "how can anyone", "who would ever", "what kind of person"
+    ],
+    false_dichotomy: [
+      "either you", "you're either", "pick a side", "with us or against",
+      "only two choices", "black and white", "no middle ground"
+    ],
+    appeal_to_fear: [
+      "before it's too late", "time is running out", "won't be around forever",
+      "last chance", "imminent threat", "coming for you", "your children will"
+    ],
+    bandwagon: [
+      "everyone is saying", "millions agree", "the majority knows",
+      "smart people understand", "those in the know", "insiders say"
+    ],
+    ad_hominem: [
+      "typical leftist", "typical rightist", "snowflake", "boomer", "karen",
+      "sheep", "sheeple", "npc", "brainwashed", "indoctrinated", "cult"
+    ],
+    call_to_action: [
+      "share this", "spread the word", "don't stay silent", "take action now",
+      "sign the petition", "join the movement", "fight back", "resist"
+    ]
+  };
+
+  // Hook/topic categories for echo drift tracking
   const HOOK_TYPES = {
-    outrage: ["insane", "betrayal", "destroyed", "disaster", "nightmare", "outrageous", "disgrace", "scandal", "slammed"],
-    fear: ["shocking", "warning", "collapse", "danger", "terrifying", "threat", "crisis", "breaking", "urgent"],
-    identity_validation: ["truth", "real", "finally", "us", "them", "woke", "they", "proven", "exposed"],
-    hype: ["game changer", "huge", "massive", "revolutionary", "breakthrough", "incredible", "amazing"],
-    drama: ["exposed", "pathetic", "humiliated", "beef", "feud", "controversy", "drama", "rips"],
-    cynicism: ["scam", "fake", "lies", "propaganda", "sheep", "blind", "fooled", "corrupt"],
-    hope: ["saving", "future", "better", "solution", "win", "triumph", "breakthrough", "success"]
+    outrage: ["insane", "betrayal", "destroyed", "disaster", "nightmare", "outrageous", "disgrace", "scandal", "slammed", "corrupt", "rigged"],
+    fear: ["shocking", "warning", "collapse", "danger", "terrifying", "threat", "crisis", "breaking", "urgent", "emergency", "alarming"],
+    identity_validation: ["truth", "real", "finally", "us vs them", "they", "proven", "exposed", "woke", "based", "redpilled", "blackpilled"],
+    hype: ["game changer", "huge", "massive", "revolutionary", "breakthrough", "incredible", "amazing", "mind-blowing", "insane", "legendary"],
+    drama: ["exposed", "pathetic", "humiliated", "beef", "feud", "controversy", "drama", "clap back", "ratio", "canceled"],
+    cynicism: ["scam", "fake", "lies", "propaganda", "sheep", "blind", "fooled", "corrupt", "shill", "grift", "astroturf"],
+    hope: ["saving", "future", "better", "solution", "win", "triumph", "breakthrough", "success", "progress", "healing"],
+    tribalism: ["our side", "their side", "real americans", "true patriots", "the left", "the right", "libs", "cons", "dems", "republicans"]
+  };
+
+  // Structure and engagement patterns
+  const STRUCTURAL_PATTERNS = {
+    clickbait_caps: /^[A-Z\s!?]{10,}$/m, // Lines of all caps
+    excessive_punctuation: /[!?]{2,}/g, // Multiple ! or ?
+    question_baiting: /\?.*\?.*\?/g, // Multiple questions
+    thread_hook: /(thread|🧵|1\/\d+|a thread)/i,
+    ratio_bait: /(ratio|L\+|W\+|cope|seethe|mald)/i
   };
 
   // --- TEXT EXTRACTION ---
@@ -164,9 +239,132 @@
     }
   }
 
-  // --- ANALYSIS ENGINE ---
+  // --- ENHANCED ANALYSIS ENGINE ---
+  
+  // Helper: count pattern matches with word boundaries
+  function countMatches(text, patterns) {
+    let count = 0;
+    const lowerText = text.toLowerCase();
+    patterns.forEach(pattern => {
+      // Use includes for phrases, regex for single words
+      if (pattern.includes(' ')) {
+        const matches = lowerText.split(pattern.toLowerCase()).length - 1;
+        count += matches;
+      } else {
+        const regex = new RegExp('\\b' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+        const matches = text.match(regex);
+        if (matches) count += matches.length;
+      }
+    });
+    return count;
+  }
+  
+  // Extract features from text
+  function extractFeatures(text) {
+    const lowerText = text.toLowerCase();
+    const words = lowerText.split(/\s+/).filter(w => w.length > 0);
+    const wordCount = words.length;
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentenceCount = Math.max(sentences.length, 1);
+    
+    // Emotional intensity (weighted)
+    const highEmotionHits = countMatches(text, EMOTIONAL_LEXICON.high);
+    const medEmotionHits = countMatches(text, EMOTIONAL_LEXICON.medium);
+    const lowEmotionHits = countMatches(text, EMOTIONAL_LEXICON.low);
+    const emotionalScore = (highEmotionHits * 3 + medEmotionHits * 2 + lowEmotionHits * 1);
+    
+    // Certainty patterns
+    const absoluteHits = countMatches(text, CERTAINTY_PATTERNS.absolutes);
+    const dismissiveHits = countMatches(text, CERTAINTY_PATTERNS.dismissive);
+    const hiddenTruthHits = countMatches(text, CERTAINTY_PATTERNS.hidden_truth);
+    const certaintyScore = absoluteHits * 2 + dismissiveHits * 3 + hiddenTruthHits * 3;
+    
+    // Nuance indicators (reduce distortion)
+    const nuanceHits = countMatches(text, NUANCE_INDICATORS);
+    
+    // Rhetorical patterns
+    let rhetoricalScore = 0;
+    const detectedRhetoric = [];
+    Object.entries(RHETORICAL_PATTERNS).forEach(([type, patterns]) => {
+      const hits = countMatches(text, patterns);
+      if (hits > 0) {
+        rhetoricalScore += hits * 2;
+        detectedRhetoric.push(type);
+      }
+    });
+    
+    // Structural patterns
+    const capsWords = text.split(/\s+/).filter(w => 
+      w.length >= 3 && w === w.toUpperCase() && /[A-Z]/.test(w)
+    ).length;
+    const exclamationCount = (text.match(/!/g) || []).length;
+    const questionCount = (text.match(/\?/g) || []).length;
+    const excessivePunctuation = (text.match(STRUCTURAL_PATTERNS.excessive_punctuation) || []).length;
+    
+    // Imperative density (commands)
+    const imperativeStarters = ['stop', 'start', 'don\'t', 'do', 'never', 'always', 'remember', 'think about', 'consider', 'share', 'spread'];
+    let imperativeCount = 0;
+    imperativeStarters.forEach(imp => {
+      const regex = new RegExp('(^|[.!?]\\s*)' + imp + '\\b', 'gi');
+      imperativeCount += (text.match(regex) || []).length;
+    });
+    
+    // Topic/hook detection
+    const hookScores = {};
+    let maxHookScore = 0;
+    let dominantHook = "generic";
+    
+    Object.entries(HOOK_TYPES).forEach(([type, keywords]) => {
+      const hits = countMatches(text, keywords);
+      hookScores[type] = hits;
+      if (hits > maxHookScore) {
+        maxHookScore = hits;
+        dominantHook = type;
+      }
+    });
+    
+    // Generate simple text fingerprint for similarity (hashed TF-IDF-like)
+    const significantWords = words.filter(w => 
+      w.length > 4 && !['about', 'their', 'there', 'these', 'those', 'would', 'could', 'should'].includes(w)
+    );
+    const wordFreq = {};
+    significantWords.forEach(w => {
+      wordFreq[w] = (wordFreq[w] || 0) + 1;
+    });
+    const topWords = Object.entries(wordFreq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([word]) => word);
+    
+    return {
+      wordCount,
+      sentenceCount,
+      emotionalScore,
+      highEmotionHits,
+      medEmotionHits,
+      lowEmotionHits,
+      certaintyScore,
+      absoluteHits,
+      dismissiveHits,
+      hiddenTruthHits,
+      nuanceHits,
+      rhetoricalScore,
+      detectedRhetoric,
+      capsWords,
+      exclamationCount,
+      questionCount,
+      excessivePunctuation,
+      imperativeCount,
+      hookScores,
+      dominantHook,
+      maxHookScore,
+      topWords,
+      avgSentenceLength: wordCount / sentenceCount
+    };
+  }
+  
   function analyze(text, dwellSeconds, scrollBacks) {
-    // Input validation - bail early for garbage
+    // Input validation
     if (!text || text.trim().length < CONFIG.MIN_TEXT_LENGTH) {
       return {
         emotionalPressure: 0,
@@ -174,77 +372,57 @@
         distortion: 0,
         echoDrift: 0,
         influence: 0,
-        dominantHook: "generic"
+        dominantHook: "generic",
+        features: null
       };
     }
 
-    const lowerText = text.toLowerCase();
-    const words = lowerText.split(/\s+/).filter(w => w.length > 0);
-    const wordCount = words.length;
-    const textLengthFactor = Math.max(wordCount, 50);
-
-    // 1. Emotional Pressure
-    let emotionHits = 0;
-    EMOTIONAL_WORDS.forEach(word => {
-      const regex = new RegExp('\\b' + word + '\\b', 'gi');
-      const matches = text.match(regex);
-      if (matches) emotionHits += matches.length;
-    });
-
-    const exclamationHits = (text.match(/!/g) || []).length;
-    const capsHits = text.split(/\s+/).filter(w => 
-      w.length >= 3 && w === w.toUpperCase() && /[A-Z]/.test(w)
-    ).length;
-
-    // Calibrated formula - normalized per 100 words
-    const wordsNorm = wordCount / 100;
-    const emotionalPressureRaw = (emotionHits * 3 + capsHits * 2 + exclamationHits * 0.5) / Math.max(wordsNorm * 10, 1);
-    const emotionalPressure = Math.min(Math.max(emotionalPressureRaw, 0), 1);
-
-    // 2. Fixation - Time-based with scroll awareness
-    const effectiveDwell = Math.max(dwellSeconds - 3, 0); // Grace period of 3 seconds
-    const baseFixation = Math.min(effectiveDwell / CONFIG.FIXATION_CAP, 0.8);
-    const scrollBackBonus = Math.min(scrollBacks * 0.03, 0.1);
-    const pauseBonus = dwellSeconds > 8 ? 0.1 : 0;
-    const fixation = Math.min(Math.max(baseFixation + scrollBackBonus + pauseBonus, 0), 1);
-
-    // 3. Distortion
-    let certaintyHits = 0;
-    CERTAINTY_PHRASES.forEach(phrase => {
-      if (lowerText.includes(phrase)) certaintyHits++;
-    });
+    const features = extractFeatures(text);
+    const { wordCount, sentenceCount } = features;
+    const wordsNorm = Math.max(wordCount / 100, 1);
     
-    let hedgeHits = 0;
-    HEDGING_WORDS.forEach(word => {
-      if (lowerText.includes(word)) hedgeHits++;
-    });
+    // 1. Emotional Pressure (0-1)
+    // Normalized by text length, accounts for intensity levels
+    const emotionDensity = features.emotionalScore / wordsNorm;
+    const punctuationBoost = Math.min((features.exclamationCount + features.excessivePunctuation) / sentenceCount, 0.3);
+    const capsBoost = Math.min(features.capsWords / wordsNorm * 0.5, 0.2);
+    const emotionalPressure = Math.min(
+      (emotionDensity / 8) + punctuationBoost + capsBoost,
+      1
+    );
 
-    const distortionRaw = (certaintyHits * 3) - (hedgeHits * 0.8);
-    const distortion = Math.min(Math.max(distortionRaw / 6, 0), 1);
+    // 2. Fixation (0-1) - Behavioral signals
+    const effectiveDwell = Math.max(dwellSeconds - 3, 0);
+    const baseFixation = Math.min(effectiveDwell / CONFIG.FIXATION_CAP, 0.7);
+    const scrollBackBonus = Math.min(scrollBacks * 0.04, 0.15);
+    const pauseBonus = dwellSeconds > 10 ? 0.15 : dwellSeconds > 6 ? 0.08 : 0;
+    const fixation = Math.min(baseFixation + scrollBackBonus + pauseBonus, 1);
 
-    // 4. Dominant Hook
-    let maxHits = 0;
-    let dominantHook = "generic";
+    // 3. Distortion (0-1) - Certainty vs nuance balance + rhetorical manipulation
+    const certaintyDensity = features.certaintyScore / wordsNorm;
+    const nuanceDensity = features.nuanceHits / wordsNorm;
+    const rhetoricalDensity = features.rhetoricalScore / wordsNorm;
     
-    Object.entries(HOOK_TYPES).forEach(([type, keywords]) => {
-      let hits = 0;
-      keywords.forEach(k => {
-        if (lowerText.includes(k)) hits++;
-      });
-      if (hits > maxHits) {
-        maxHits = hits;
-        dominantHook = type;
-      }
-    });
+    // High distortion = high certainty + low nuance + rhetorical tricks
+    const rawDistortion = (certaintyDensity * 1.5 + rhetoricalDensity) - (nuanceDensity * 2);
+    const distortion = Math.min(Math.max(rawDistortion / 5, 0), 1);
 
-    // Fallback heuristics
-    if (maxHits === 0) {
-      if (emotionalPressure > 0.5) dominantHook = "outrage";
-      else if (distortion > 0.5) dominantHook = "identity_validation";
-      else if (exclamationHits > 3) dominantHook = "hype";
+    // 4. Influence (0-1) - Combined metric
+    // Weighted: emotion is primary, fixation amplifies, imperative language adds urgency
+    const imperativeFactor = Math.min(features.imperativeCount / sentenceCount, 0.2);
+    const influence = Math.min(
+      (emotionalPressure * 0.55) + (fixation * 0.25) + (distortion * 0.15) + imperativeFactor,
+      1
+    );
+
+    // Fallback hook detection
+    let dominantHook = features.dominantHook;
+    if (features.maxHookScore === 0) {
+      if (emotionalPressure > 0.6) dominantHook = "outrage";
+      else if (distortion > 0.6) dominantHook = "identity_validation";
+      else if (features.exclamationCount > 5) dominantHook = "hype";
+      else if (features.questionCount > 5) dominantHook = "drama";
     }
-
-    const influence = (emotionalPressure * 0.6) + (fixation * 0.4);
 
     return {
       emotionalPressure,
@@ -252,61 +430,88 @@
       distortion,
       echoDrift: 0, // Calculated from history in performActiveScan
       influence,
-      dominantHook
+      dominantHook,
+      features // Include features for advanced interpretation
     };
   }
 
   function generateInterpretation(metrics) {
-    const { influence, distortion, echoDrift, dominantHook, emotionalPressure, fixation } = metrics;
+    const { influence, distortion, echoDrift, dominantHook, emotionalPressure, fixation, features } = metrics;
     const hookClean = (dominantHook || 'generic').replace(/_/g, ' ');
-
-    const interpretations = [];
-
-    if (influence > 0.7 && distortion > 0.7) {
-      return `This content uses strong ${hookClean} framing combined with absolute language. It's designed to bypass careful thinking and demand immediate agreement. Consider stepping back before forming opinions.`;
-    }
     
-    if (echoDrift > 0.6) {
-      return `You've been consuming similar ${hookClean}-themed content repeatedly. This pattern reinforcement can narrow your perspective over time. Consider seeking out contrasting viewpoints.`;
-    }
+    // Build specific observations based on detected features
+    const observations = [];
     
-    if (echoDrift > 0.4 && influence > 0.5) {
-      return `This ${hookClean} content matches your recent browsing pattern while also being emotionally engaging. Your reactions to this topic may be becoming more automatic.`;
-    }
-
-    if (distortion > 0.7) {
-      return `This content uses certainty language and absolute framing, presenting ideas as unquestionable facts. Look for hedging words like "might" or "suggests" in more balanced content.`;
-    }
-    
-    if (influence > 0.6 && emotionalPressure > 0.5) {
-      return `High emotional intensity detected with ${hookClean} themes. The content is designed to create strong reactions. Your attention is being captured by emotionally-charged language.`;
-    }
-    
-    if (distortion > 0.5 && emotionalPressure > 0.4) {
-      return `This content combines emotional language with certainty framing. It's using feelings to make claims feel true rather than providing balanced evidence.`;
-    }
-    
-    if (fixation > 0.5 && influence > 0.4) {
-      return `Extended engagement detected. You've been focused on this content for a while. This level of attention can amplify the content's influence on your thinking.`;
-    }
-
-    if (influence > 0.5) {
-      return `Moderate ${hookClean} engagement detected. This content is capturing your attention through emotional or identity-based appeals.`;
-    }
-    
-    if (distortion > 0.4) {
-      return `Some certainty language detected. The content leans toward presenting opinions as facts, though less aggressively than highly distorted content.`;
-    }
-
-    if (influence < 0.2 && distortion < 0.2) {
-      return `Low influence profile. This content appears relatively neutral and isn't using strong emotional or persuasive techniques.`;
-    }
-    
-    if (influence < 0.3) {
-      return `Minimal emotional engagement with this content. It's not significantly altering your state or using heavy persuasion tactics.`;
+    if (features) {
+      // Rhetorical pattern insights
+      if (features.detectedRhetoric && features.detectedRhetoric.length > 0) {
+        const rhetoricalNames = {
+          'loaded_questions': 'leading questions',
+          'false_dichotomy': 'false either/or framing',
+          'appeal_to_fear': 'urgency and fear appeals',
+          'bandwagon': '"everyone agrees" claims',
+          'ad_hominem': 'personal attacks or labeling',
+          'call_to_action': 'action demands'
+        };
+        const detected = features.detectedRhetoric
+          .map(r => rhetoricalNames[r] || r)
+          .slice(0, 2);
+        observations.push(`Uses ${detected.join(' and ')}`);
+      }
+      
+      // Certainty pattern insights
+      if (features.dismissiveHits > 0) {
+        observations.push('dismisses opposing views');
+      }
+      if (features.hiddenTruthHits > 0) {
+        observations.push('claims hidden or suppressed truth');
+      }
+      if (features.absoluteHits > 2) {
+        observations.push('makes absolute claims');
+      }
+      
+      // Emotional intensity insights
+      if (features.highEmotionHits > 2) {
+        observations.push('high-intensity emotional language');
+      }
+      if (features.capsWords > 3) {
+        observations.push('aggressive formatting');
+      }
     }
 
-    return `Balanced ${hookClean} content with moderate framing. Some persuasive elements present but within normal range for online content.`;
+    // Generate primary interpretation based on metric combination
+    let primary = '';
+    
+    if (influence > 0.75 && distortion > 0.6) {
+      primary = `High-pressure content designed to override critical thinking. ${hookClean.charAt(0).toUpperCase() + hookClean.slice(1)} framing combined with certainty language creates a "must agree" effect.`;
+    } else if (echoDrift > 0.65) {
+      primary = `Pattern reinforcement detected. You've consumed similar ${hookClean} content ${Math.round(echoDrift * 100)}% of your recent scans. Your perspective on this topic may be narrowing.`;
+    } else if (echoDrift > 0.4 && influence > 0.5) {
+      primary = `This ${hookClean} content fits your recent consumption pattern while being emotionally engaging. Automatic reactions become more likely with repeated exposure.`;
+    } else if (distortion > 0.7) {
+      primary = `Certainty-heavy content that presents opinions as facts. Uses absolute language with limited acknowledgment of nuance or opposing viewpoints.`;
+    } else if (emotionalPressure > 0.6 && distortion > 0.4) {
+      primary = `Emotional intensity paired with certainty framing. The content uses feelings to make claims feel true before logical evaluation.`;
+    } else if (influence > 0.6) {
+      primary = `Engaging ${hookClean} content capturing your attention. Emotional or identity-based appeals are pulling your focus.`;
+    } else if (fixation > 0.5 && influence > 0.35) {
+      primary = `Extended focus on this content detected. Prolonged engagement can amplify even moderate influence effects.`;
+    } else if (distortion > 0.5) {
+      primary = `Content leans toward presenting opinions as established facts. Some certainty language but not overwhelming.`;
+    } else if (influence < 0.25 && distortion < 0.25) {
+      primary = `Low manipulation profile. This content appears relatively balanced without heavy emotional or persuasive techniques.`;
+    } else if (influence < 0.35) {
+      primary = `Moderate content with limited emotional pressure. Not significantly designed to alter your state.`;
+    } else {
+      primary = `Mixed ${hookClean} signals with some persuasive elements. Within normal range for social media content.`;
+    }
+    
+    // Add specific observations if any were detected
+    if (observations.length > 0) {
+      return `${primary} Detected: ${observations.slice(0, 3).join(', ')}.`;
+    }
+    
+    return primary;
   }
 
   // --- CSS INJECTION ---
@@ -322,26 +527,27 @@
         top: 50% !important;
         transform: translateY(-50%) !important;
         z-index: 2147483646 !important;
-        background: rgba(0, 20, 80, 0.7) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 12px !important;
-        padding: 16px 12px !important;
+        background: linear-gradient(135deg, rgba(0, 56, 255, 0.9) 0%, rgba(0, 30, 150, 0.95) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        border-radius: 50px !important;
+        padding: 14px 20px !important;
         color: white !important;
         font-family: 'Cooper Hewitt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
         font-weight: 700 !important;
-        font-size: 12px !important;
+        font-size: 13px !important;
         text-transform: uppercase !important;
-        letter-spacing: 2px !important;
-        writing-mode: vertical-rl !important;
-        text-orientation: mixed !important;
+        letter-spacing: 1.5px !important;
         cursor: pointer !important;
-        box-shadow: 0 4px 24px rgba(0, 56, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 4px 24px rgba(0, 56, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
         opacity: 0 !important;
         pointer-events: none !important;
         white-space: nowrap !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
       }
       
       #boundier-scan-btn.visible {
@@ -352,25 +558,33 @@
       
       @keyframes boundier-pulse {
         0%, 100% { 
-          box-shadow: 0 4px 24px rgba(0, 56, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          box-shadow: 0 4px 24px rgba(0, 56, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
           transform: translateY(-50%) scale(1);
         }
         50% { 
-          box-shadow: 0 6px 32px rgba(0, 56, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-          transform: translateY(-50%) scale(1.02);
+          box-shadow: 0 8px 36px rgba(0, 56, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+          transform: translateY(-50%) scale(1.03);
         }
       }
       
       #boundier-scan-btn:hover {
-        background: rgba(0, 40, 120, 0.85) !important;
-        box-shadow: 0 8px 40px rgba(0, 56, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+        background: linear-gradient(135deg, rgba(0, 70, 255, 0.95) 0%, rgba(0, 40, 180, 1) 100%) !important;
+        box-shadow: 0 8px 40px rgba(0, 56, 255, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
         transform: translateY(-50%) scale(1.05) !important;
-        border-color: rgba(255, 255, 255, 0.3) !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
       }
       
       #boundier-scan-btn:active {
         transform: translateY(-50%) scale(0.98) !important;
-        box-shadow: 0 2px 16px rgba(0, 56, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 2px 16px rgba(0, 56, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+      }
+      
+      .boundier-scan-icon {
+        width: 16px !important;
+        height: 16px !important;
+        stroke: currentColor !important;
+        stroke-width: 2 !important;
+        fill: none !important;
       }
       
       #boundier-overlay {
@@ -552,8 +766,9 @@
       }
       
       .boundier-logo-img {
-        height: 32px !important;
+        height: 48px !important;
         width: auto !important;
+        margin-bottom: 4px !important;
       }
     `;
     
@@ -568,10 +783,10 @@
     injectStyles();
     console.log('[Boundier] Injecting UI elements');
 
-    // Scan Button
+    // Scan Button with icon
     const btn = document.createElement('button');
     btn.id = 'boundier-scan-btn';
-    btn.textContent = 'Scan';
+    btn.innerHTML = `<svg class="boundier-scan-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Analyze`;
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -668,17 +883,25 @@
     
     const setBar = (id, percent) => {
       const el = document.getElementById(id);
-      if (el) el.style.width = `${percent}%`;
+      if (el) {
+        // Ensure minimum visible width and use setProperty for specificity
+        const width = Math.max(percent, 3);
+        el.style.setProperty('width', `${width}%`, 'important');
+        console.log(`[Boundier] Set bar ${id} to ${width}%`);
+      }
     };
     
+    // Set values immediately
     setValue('b-influence-val', Math.round(metrics.influence * 100));
-    setBar('b-influence-bar', metrics.influence * 100);
-    
     setValue('b-distortion-val', Math.round(metrics.distortion * 100));
-    setBar('b-distortion-bar', metrics.distortion * 100);
-    
     setValue('b-drift-val', Math.round(metrics.echoDrift * 100));
-    setBar('b-drift-bar', metrics.echoDrift * 100);
+    
+    // Animate bars with slight delay for visual effect
+    setTimeout(() => {
+      setBar('b-influence-bar', metrics.influence * 100);
+      setBar('b-distortion-bar', metrics.distortion * 100);
+      setBar('b-drift-bar', metrics.echoDrift * 100);
+    }, 100);
     
     const interpretation = document.getElementById('b-interpretation');
     if (interpretation) {
@@ -720,18 +943,42 @@
       const metrics = analyze(text, dwell, state.scrollBacks);
       console.log('[Boundier] Raw metrics:', metrics);
 
-      // Get history and calculate REAL Echo Drift
+      // Get history and calculate ENHANCED Echo Drift
       chrome.storage.local.get(['boundier_scans'], (result) => {
         const history = result.boundier_scans || [];
         console.log('[Boundier] History length:', history.length);
         
-        // REAL Echo Drift: % of last N scans with same dominantHook
+        // Enhanced Echo Drift: combines hook matching + topic word similarity
         if (history.length > 0) {
-          const lastN = history.slice(0, 7);
+          const lastN = history.slice(0, 10);
+          
+          // 1. Hook category similarity (40% weight)
           const sameHookCount = lastN.filter(s => s.dominantHook === metrics.dominantHook).length;
-          metrics.echoDrift = sameHookCount / lastN.length;
-          console.log('[Boundier] Echo Drift calculated:', metrics.echoDrift, 
-                      '(' + sameHookCount + '/' + lastN.length + ' matching "' + metrics.dominantHook + '")');
+          const hookSimilarity = sameHookCount / lastN.length;
+          
+          // 2. Topic word similarity using topWords (60% weight)
+          let topicSimilarity = 0;
+          const currentWords = new Set(metrics.features?.topWords || []);
+          if (currentWords.size > 0) {
+            const historySimilarities = lastN
+              .filter(s => s.topWords && s.topWords.length > 0)
+              .map(s => {
+                const histWords = new Set(s.topWords);
+                const intersection = [...currentWords].filter(w => histWords.has(w));
+                // Jaccard similarity
+                const union = new Set([...currentWords, ...histWords]);
+                return intersection.length / union.size;
+              });
+            
+            if (historySimilarities.length > 0) {
+              topicSimilarity = historySimilarities.reduce((a, b) => a + b, 0) / historySimilarities.length;
+            }
+          }
+          
+          // Weighted combination
+          metrics.echoDrift = (hookSimilarity * 0.4) + (topicSimilarity * 0.6);
+          console.log('[Boundier] Echo Drift:', metrics.echoDrift.toFixed(2), 
+                      '(hook:', hookSimilarity.toFixed(2), 'topic:', topicSimilarity.toFixed(2) + ')');
         } else {
           metrics.echoDrift = 0;
         }
@@ -747,7 +994,7 @@
         
         hideScanButton();
 
-        // Save to history
+        // Save to history with topic fingerprint
         const scanRecord = {
           id: Date.now().toString(),
           timestamp: Date.now(),
@@ -758,7 +1005,8 @@
           fixation: metrics.fixation,
           dominantHook: metrics.dominantHook,
           interpretation: generateInterpretation(metrics),
-          url: window.location.hostname
+          url: window.location.hostname,
+          topWords: metrics.features?.topWords || [] // Store for similarity calculation
         };
         
         const newHistory = [scanRecord, ...history].slice(0, 20); // Keep last 20

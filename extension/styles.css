@@ -28,32 +28,33 @@
   --boundier-glow: 0 0 20px rgba(0, 56, 255, 0.4);
 }
 
-/* Scan Button */
+/* Scan Button - Horizontal Pill Style */
 #boundier-scan-btn {
   position: fixed;
   right: 20px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 2147483646;
-  background: var(--boundier-glass-dark);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 16px 12px;
+  background: linear-gradient(135deg, rgba(0, 56, 255, 0.9) 0%, rgba(0, 30, 150, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50px;
+  padding: 14px 20px;
   color: white;
   font-family: 'Cooper Hewitt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
+  letter-spacing: 1.5px;
   cursor: pointer;
-  box-shadow: var(--boundier-glow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: var(--boundier-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   opacity: 0;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 #boundier-scan-btn.visible {
@@ -64,25 +65,33 @@
 
 @keyframes boundier-pulse {
   0%, 100% { 
-    box-shadow: var(--boundier-glow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: var(--boundier-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transform: translateY(-50%) scale(1);
   }
   50% { 
-    box-shadow: 0 6px 32px rgba(0, 56, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    transform: translateY(-50%) scale(1.02);
+    box-shadow: 0 8px 36px rgba(0, 56, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transform: translateY(-50%) scale(1.03);
   }
 }
 
 #boundier-scan-btn:hover {
   transform: translateY(-50%) scale(1.05);
-  box-shadow: 0 8px 40px rgba(0, 56, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  background: rgba(0, 40, 120, 0.85);
-  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 40px rgba(0, 56, 255, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, rgba(0, 70, 255, 0.95) 0%, rgba(0, 40, 180, 1) 100%);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 #boundier-scan-btn:active {
   transform: translateY(-50%) scale(0.98);
-  box-shadow: 0 2px 16px rgba(0, 56, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 16px rgba(0, 56, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.boundier-scan-icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
 }
 
 /* Overlay Panel */
@@ -249,8 +258,9 @@
 }
 
 .boundier-logo-img {
-  height: 32px;
+  height: 48px;
   width: auto;
+  margin-bottom: 4px;
 }
 
 /* Popup Specifics */
