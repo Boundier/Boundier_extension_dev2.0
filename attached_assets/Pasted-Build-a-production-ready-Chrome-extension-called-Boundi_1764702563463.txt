@@ -1,0 +1,370 @@
+Build a production-ready Chrome extension called *Boundier*.
+
+Boundier does NOT analyze what a person is looking for — it analyzes what *changes them while they consume content*.
+
+Do NOT build a misinformation detector, clickbait detector, fact checker, or blocker.
+Do NOT call external APIs.
+All analysis must be fully client-side with lightweight heuristics only.
+
+---
+
+# Folder Structure
+
+/extension
+  manifest.json
+  background.js
+  contentScript.js
+  popup.html
+  popup.js
+  styles.css
+  /assets
+    icon.png
+
+---
+
+# Manifest Requirements
+
+- Manifest V3
+- "permissions": ["activeTab", "scripting", "storage"]
+- "host_permissions": [
+    "https://twitter.com/*",
+    "https://x.com/*",
+    "https://reddit.com/*",
+    "https://www.reddit.com/*",
+    "http:///",
+    "https:///"
+  ]
+- Content script runs on:
+  - https://twitter.com/*
+  - https://x.com/*
+  - https://reddit.com/*
+  - https://www.reddit.com/*
+  - http:///
+  - https:///
+- popup.html opens on icon click via "action" in manifest
+
+Include a strict default Content Security Policy suitable for Manifest V3 (no remote scripts, no eval).
+
+---
+
+# Core Logic
+
+Boundier DOES NOT scan all pages automatically.
+It only analyzes when triggered by the interaction model described below.
+
+## Text extraction
+
+In contentScript.js:
+
+- Extract *visible text only* from the main document body.
+- Ignore:
+  - input fields
+  - textareas
+  - forms
+  - scripts, styles, hidden elements
+- Use simple DOM traversal with visibility checks.
+
+All text processing must happen in the content script, fully locally.
+
+---
+
+# Exposure Metrics
+
+For each scan, compute 3 scores in [0, 1]:
+
+1. *Influence* = emotional pressure + user fixation intensity  
+2. *Distortion* = emotional amplification + certainty tone  
+3. *Echo Drift* = repeated response to the same emotional hook type over time
+
+No LLMs. No ML frameworks. No external libraries.  
+Use *simple string and timing heuristics only.*
+
+### Heuristic definitions (implement these directly)
+
+#### Emotional pressure (0–1)
+
+Based on the extracted text:
+
+- Count emotionally intense words / phrases:
+  - e.g. "insane", "destroyed", "humiliated", "crushed", "disaster", "exposed", "shocking", "brutal", "nightmare", "betrayal", "dominated", "obliterated", "pathetic", etc.
+- Count conflict / tribal framing:
+  - "vs", "destroyed", "owned", "ratioed", "exposed", "calling out", "canceled"
+- Count:
+  - number of "!" characters
+  - ALL CAPS words of length ≥ 3
+- Normalize:
+  - emotionalPressure = clamp( (emotionHits + capsHits + exclamationHits * 0.5) / (textLengthFactor), 0, 1 )
+
+#### Fixation (0–1)
+
+Track, per page and per "current main content":
+
+- total dwell time since load or since content comes into view
+- longest continuous pause without major scroll
+- whether user scrolls back up to the same region
+- optional: video elements in view for a long duration
+
+Use timestamps and scroll listeners:
+
+- baseFixation = dwellSeconds / maxDwellCap (e.g. 60)
+- add weight if:
+  - user scrolls back up
+  - user stops scrolling for > 5 seconds
+- fixation = clamp(baseFixation + bonuses, 0, 1)
+
+#### Distortion (0–1)
+
+Look for certainty-heavy, one-sided framing:
+
+- High-certainty phrases:
+  - "everyone knows", "the truth is", "this proves", "no one talks about", "what they don't tell you", "wake up", "no debate", "obviously", "undeniable"
+- Absolute language:
+  - "always", "never", "everyone", "no one", "all of them"
+- Low presence of hedging words:
+  - "maybe", "possibly", "might", "could", "likely"
+
+Heuristic:
+
+- distortionRaw = (certaintyHits + absoluteHits) - hedgeHits * 0.5
+- distortion = normalized & clamped to [0, 1]
+
+#### Echo Drift (0–1)
+
+Echo Drift uses past scans stored in chrome.storage.local.
+
+For each scan, classify a *dominant emotional hook type*, e.g.:
+
+- "outrage"
+- "fear"
+- "identity validation"
+- "hype"
+- "drama"
+- "cynicism"
+- "hope"
+
+Hook type choice is based on the emotional words found (simple rule-based mapping).
+
+History model:
+
+- Store last 10 scans as an array like:
+  - key: "boundier_scans"
+  - value: [{ id, timestamp, influence, distortion, echoDrift, dominantHook, interpretation }]
+- Echo Drift for the current scan:
+  - look at last N (e.g. 7) scans
+  - count how many share the same dominantHook as current
+  - echoDrift = count / N (clamped to [0, 1])
+
+---
+
+# Hybrid Interaction Model (implement exactly)
+
+*Never scan automatically on every page load.*
+
+### Passive sensing
+
+In the content script:
+
+- After a short initial dwell time (e.g. 5 seconds), start tracking:
+  - emotionalPressure (from text)
+  - fixation (from scroll/time)
+
+If BOTH are high:
+
+- emotionalPressure ≥ 0.6
+- AND fixation ≥ 0.6
+
+→ show a subtle glowing *Scan* button on the right edge of the viewport.
+
+#### Scan Button Specs
+
+- Position: position: fixed; right: 16px; top: 50%; transform: translateY(-50%);
+- Right-edge pulse effect
+- Background: rgba(0,56,255,0.45)
+- Glow: 0 0 12px #0038FF88
+- Border-radius: 6px
+- Hover: slightly stronger glow and scale up to 1.03
+- Active (tap/click): scale down to 0.97
+
+### Active scan
+
+When user clicks the Scan button:
+
+1. Run the analysis:
+   - recalculate emotionalPressure, fixation, distortion, echoDrift
+   - compute Influence = average(emotionalPressure, fixation) or a simple weighted formula
+2. Save scan result to chrome.storage.local:
+   - maintain only last 10 entries
+3. Show the Boundier overlay panel with the 3 scores and an interpretation line.
+
+### Silent auto-analysis
+
+If:
+
+- Scan button is visible,
+- user does NOT click it,
+- fixation continues rising (e.g. +30% dwell time after button appears),
+
+then:
+
+- Run analysis silently in the background,
+- Store the scan result in history,
+- Wait until the user:
+  - scrolls away from the main content (e.g. > 80% down), OR
+  - navigates away, OR
+  - the tab loses visibility,
+
+THEN briefly show the overlay panel once with the analysis.
+
+*Never interrupt content while it is being consumed.*
+
+---
+
+# UI Requirements (Boundier Glass Style)
+
+Apply this style to BOTH:
+
+- the in-page overlay panel
+- the extension popup.html
+
+### Font
+
+Use *Cooper Hewitt* via @font-face in styles.css.  
+Bundle font files locally (no CDN).
+
+### Colors
+
+- Primary dark: #000543
+- Accent blue: #0038FF
+- White: #FFFFFF
+- Light glass: rgba(255,255,255,0.07)
+- Dark glass tint: rgba(0,5,67,0.32)
+
+### Glass Card Base Style
+
+Apply to main panels and cards:
+
+- background: rgba(0,5,67,0.32);
+- backdrop-filter: blur(12px);
+- border-radius: 16px;
+- box-shadow: 0px 4px 20px rgba(0,0,0,0.25);
+- border: 1px solid rgba(255,255,255,0.10);
+- color: #FFFFFF;
+
+---
+
+# Overlay Panel
+
+In contentScript.js, inject an overlay:
+
+- position: fixed;
+- top: 0; right: 0;
+- height: 100vh; width: 320px;
+- Base style: Boundier glass card as defined above
+- Slide-in animation:
+  - initial: transform: translateX(100%);
+  - visible: transform: translateX(0);
+  - transition: transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1); (spring-like feel)
+
+Overlay content layout:
+
+- Header with title "Boundier" + small label "Current Influence Snapshot"
+- Scores section:
+  - Influence score (0–1, show as number with simple bar)
+  - Distortion score (0–1)
+  - Echo Drift score (0–1)
+- One-line interpretation sentence
+- Close button "×" top-right:
+  - no text, just icon-style button
+  - clicking it fully removes overlay from DOM
+
+### Interpretation Sentence Format
+
+Always short, factual, and non-judgmental.
+
+Examples:
+
+- “Strong identity validation and certainty tone — this type of content currently influences you more than others.”
+- “High emotional intensity with repeated exposure to similar themes — your responses are drifting toward this pattern.”
+- “Moderate framing pressure and low fixation — this content did not significantly shift your attention profile.”
+
+Generate one concise line based *only* on the three scores and the dominant emotional hook type. No shaming, no praise.
+
+---
+
+# Popup Dashboard (Boundier UI)
+
+In popup.html + popup.js:
+
+When clicking the extension icon:
+
+- Show the last 10 scans as vertically stacked glass cards.
+
+Each card shows:
+
+- Timestamp (e.g. “Today, 14:32”)
+- Dominant emotional hook (e.g. “outrage”, “identity validation”)
+- One-line interpretation (same style as overlay)
+- A small exposure bar visualization:
+  - a thin horizontal bar showing Influence level (0–1) using accent blue over a subtle glass background
+
+At the bottom:
+
+- *Clear History* button:
+  - accent blue background: #0038FF
+  - white text
+  - rounded corners
+  - on click: wipes all stored scans from chrome.storage.local and refreshes the view
+
+No settings.  
+No login.  
+No sync.
+
+---
+
+# Privacy Requirements (hard rule)
+
+- No servers
+- No telemetry
+- No analytics
+- No external API calls
+- No external fonts or scripts
+- No raw content text saved long-term
+- No URLs or search queries saved
+
+Only store:
+
+- For each scan: { id, timestamp, influence, distortion, echoDrift, dominantHook, interpretation }
+- In chrome.storage.local only.
+
+---
+
+# Performance Rules
+
+- No continuous heavy loops.
+- Use event-driven logic:
+  - page load / DOM ready
+  - scroll listener (throttled)
+  - visibilitychange
+- Run analysis once per trigger:
+  - when Scan is clicked
+  - or when silent auto-analysis condition is met
+- No GPU usage, no ML libraries.
+- Keep all code small and efficient so it runs smoothly on low-end machines.
+
+---
+
+# Definition of Done
+
+The extension is complete when:
+
+1. The glowing Scan button appears ONLY when both emotional pressure and fixation exceed the defined thresholds.
+2. Clicking Scan opens the Boundier glass overlay with Influence, Distortion, Echo Drift scores and a one-line interpretation.
+3. If the user ignores the Scan button but keeps fixating, a silent scan runs and the overlay is shown *after* they scroll away or leave the content.
+4. The popup dashboard shows the last 10 scans with:
+   - timestamp,
+   - dominant emotional hook,
+   - interpretation,
+   - simple exposure bar,
+   and Clear History works.
+5. All data stays on device in chrome.storage.local, with no external requests.
+6. The extension runs smoothly on low-end hardware without noticeable lag during browsing.
